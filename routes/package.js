@@ -58,15 +58,83 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, async (req, re
 // New route for fetching by ID
 router.get('/fetchbyid/:id', (req, res) => {
     const fetchid = req.params.id;
-    con.query("SELECT name FROM mytable WHERE id=?", [fetchid], (err, result, fields) => {
+    
+    // First query to get the package details
+    const packageQuery = `
+        SELECT 
+            type, 
+            package_condition, 
+            destination 
+        FROM 
+            package 
+        WHERE 
+            package_id = ?
+    `;
+    
+    // Second query to get the sender details
+    const senderQuery = `
+        SELECT 
+            u.first_name AS sender_first_name, 
+            u.last_name AS sender_last_name, 
+            u.email AS sender_email, 
+            u.mobile_number AS sender_mobile_number
+        FROM 
+            user u
+        JOIN 
+            package p ON u.id = p.sender_id
+        WHERE 
+            p.package_id = ?
+    `;
+    
+    // Third query to get the receiver details
+    const receiverQuery = `
+        SELECT 
+            u.first_name AS receiver_first_name, 
+            u.last_name AS receiver_last_name, 
+            u.email AS receiver_email, 
+            u.mobile_number AS receiver_mobile_number
+        FROM 
+            user u
+        JOIN 
+            package p ON u.id = p.receiver_id
+        WHERE 
+            p.package_id = ?
+    `;
+    
+    // Execute the first query (package details)
+    con.query(packageQuery, [fetchid], (err, packageResult) => {
         if (err) {
             console.log(err);
             res.status(500).send(err);  // Send error response if there is an error
         } else {
-            res.send(result);
+            // Execute the second query (sender details)
+            con.query(senderQuery, [fetchid], (err, senderResult) => {
+                if (err) {
+                    console.log(err);
+                    res.status(500).send(err);  // Send error response if there is an error
+                } else {
+                    // Execute the third query (receiver details)
+                    con.query(receiverQuery, [fetchid], (err, receiverResult) => {
+                        if (err) {
+                            console.log(err);
+                            res.status(500).send(err);  // Send error response if there is an error
+                        } else {
+                            // Combine all results into a single object
+                            const response = {
+                                package: packageResult[0],  // Assuming packageResult is an array with one object
+                                sender: senderResult[0],    // Assuming senderResult is an array with one object
+                                receiver: receiverResult[0] // Assuming receiverResult is an array with one object
+                            };
+                            res.send(response);
+                        }
+                    });
+                }
+            });
         }
     });
 });
+
+
 
 // New route for tracking
 router.get('/tracking', (req, res) => {
