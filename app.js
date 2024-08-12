@@ -12,10 +12,7 @@ const Package = require("./models/package.js");
 const cors = require('cors');
 const port = 3000
 
-app.use(cors({
-  origin: 'http://localhost:3001',
-  credentials: true 
-}));
+app.use(cors());
 
 //syncDb()
 
@@ -28,7 +25,11 @@ app.use(cookieParser())
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
+app.get('/logout', (req, res, next)=>{
+  res.clearCookie('token');
+  res.send("loggedout")
 
+})
 
 app.get('/', (req, res) => {
   res.send('entry point')
