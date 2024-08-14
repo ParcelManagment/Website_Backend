@@ -134,6 +134,7 @@ router.get('/profile', isStaff, async (req, res) => {
     }
 
     const employee_id = req.staff_id;
+    console.log(employee_id);
     try {
         const employee = await getEmployeeById(employee_id, connection);
         if (!employee) {
