@@ -4,22 +4,22 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const isStaff = require('../util/auth/staffAuth.js');
 
-const  {connectDb,getConnection, endConnection} = require('../database/database.js');
+const  {getConnection} = require('../database/database.js');
 
 
 
 router.post('/signup', async (req, res, next) => {
-    
+
+  
     // database connection
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
         return;
     }
 
-
-    // extracting the submitted data
+      // extracting the submitted data
     const data = req.body;
     const employee_id = data.employee_id;
     const fname = data.fname;
@@ -32,18 +32,18 @@ router.post('/signup', async (req, res, next) => {
         return;
     }
     
-
-
     // checking the user email is already registered
     try{
         const result = await registered(employee_id, connection);
         if(result.length>0){
             res.status(409).json({Error: "User has already registered"})
+            connection.release();
             return;
         }
         
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
+        connection.release();
         return;
     }
     
@@ -51,6 +51,7 @@ router.post('/signup', async (req, res, next) => {
     const validationError = validate(employee_id, fname, lname, password);
     if(validationError){
         res.status(400).json({Error: validationError})
+        connection.release();
         return;
     }
     
@@ -73,7 +74,7 @@ router.post('/signup', async (req, res, next) => {
         }
 
     }finally{
-       // endConnection()
+        connection.release();
     }
 });
 
@@ -81,7 +82,7 @@ router.post('/signup', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
 
   
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
@@ -95,6 +96,7 @@ router.post('/login', async (req, res, next) => {
     // check empty fields
     if (!employee_id || !password) {
         res.status(400).json({ Error: "Empty Fields. Please Try Again" });
+        connection.release();
         return;
     }
 
@@ -117,6 +119,8 @@ router.post('/login', async (req, res, next) => {
 
     } catch (err) {
         res.status(500).json({ Error: "Something went Wrong while login" });
+    }finally{
+        connection.release();
     }
 
 
@@ -126,7 +130,7 @@ router.post('/login', async (req, res, next) => {
 
 
 router.get('/profile', isStaff, async (req, res) => {
-    const connection = getConnection();
+    const connection = await getConnection();
     if (!connection) {
         console.log("Database connection unavailable");
         res.status(500).json({ Error: "Database Error" });
@@ -146,6 +150,8 @@ router.get('/profile', isStaff, async (req, res) => {
 
     } catch (err) {
         res.status(500).json({ Error: err.message });
+    }finally{
+        connection.release();
     }
 });
 
@@ -153,6 +159,7 @@ router.get('/profile', isStaff, async (req, res) => {
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
     res.status(201).json({message: "successfully logout"})
+    connection.release();
 })
 
 // validation of the user inputs
@@ -196,17 +203,15 @@ function validate(employee_id, fname, lname, password){
 
 // validatae whether already registered or not using the employee_id. 
 async function registered(employee_id, connection){
-   
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) =>{
-            if(err){
-                reject("Server Error")
-                return
-            } 
-            resolve(result);
-            })
-        }) 
+  
+    try {
+        const [rows] = await connection.query('SELECT * FROM station_staff WHERE employee_id = ?', [employee_id]);
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+
 };
 
 
@@ -217,36 +222,28 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(employee_id,fname, lname, hashPassword, connection){
+ async function savaUserCredientials(employee_id,fname, lname, hashPassword, connection){
     
-    const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password) VALUES (?,?,?,?)';
-    return new Promise((resolve, reject)=>{
-    connection.query(query, [employee_id, fname, lname, hashPassword], (err, result) =>{
-        if(err){
-            reject(err);
-        }else{
-            resolve(result)
-        }
-    })
-   
-    
-    });
+    try {
+        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password) VALUES (?, ?, ?, ?)';
+        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword]);
+        return result;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
 
-  
 }
 
 
 async function findUser(employee_id, connection){
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) =>{
-            if(err){
-                reject("Something Went Wrong")
-                return;
-            } 
-            resolve(result[0]);
-            })
-        }) 
+    try {
+        const [rows] = await connection.query('SELECT * FROM station_staff WHERE employee_id = ?', [employee_id]);
+        return rows[0];
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
 };
 
 
@@ -256,20 +253,19 @@ async function verifyPassword(password, hashPassword){
 
 
 async function getEmployeeById(employee_id, connection) {
-    return new Promise((resolve, reject) => {
+   try{
         const query = 'SELECT  employee_id, first_name, last_name, role FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) => {
-            if (err) {
-                reject("Something Went Wrong");
-                return;
-            }
-            if (result.length == 0) {
-                reject("Employee not found");
-                return;
-            }
-            resolve(result[0]);
-        });
-    });
+        const [rows] = await connection.query(query, [employee_id]);
+
+        if (rows.length === 0) {
+            throw new Error("Employee not found");
+        }
+        return rows[0];
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+
 }
 
 
