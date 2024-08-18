@@ -5,6 +5,7 @@ const users = require('./routes/users.js');
 const staff = require('./routes/station_staff.js');
 const packageRouter = require('./routes/package.js');
 const message = require('./routes/message.js');
+const deviceIds = require("./routes/deviceIds.js");
 const cookieParser = require('cookie-parser');
 const sequelize = require("./database/connectSequelize.js");
 const syncDb = require('./database/syncDb');
@@ -26,7 +27,8 @@ app.use(cookieParser())
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
-app.use("/message",message);
+app.use("/message",message); //chat bot can use from this.
+app.use("/deviceIds", deviceIds); //
 app.get('/logout', (req, res, next)=>{
   res.clearCookie('token');
   res.send("loggedout")
