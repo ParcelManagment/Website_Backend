@@ -9,7 +9,7 @@ const  {connectDb,getConnection, endConnection} = require('../database/database.
 
 router.post('/signup', async (req, res, next) => {
     
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
@@ -27,6 +27,7 @@ router.post('/signup', async (req, res, next) => {
     
     if(emptyFields){
         res.status(400).json({Error: emptyFields})
+        connection.release();
         return;
     }
 
@@ -35,12 +36,14 @@ router.post('/signup', async (req, res, next) => {
         const result = await validateEmail(email, connection);
         if(result){
                 res.status(409).json({Error: "User has already registered"})
+                connection.release();
                 return
         }
        
     }catch(err){
         console.log(err)
         res.status(500).json({Error: err, message: 'Registration Failed validate email'+err.massage})
+        connection.release();
         return;
     }
     
@@ -69,14 +72,14 @@ router.post('/signup', async (req, res, next) => {
         }
 
     }finally{
-       // endConnection()
+        connection.release();
     }
 });
 
 router.post('/login', async (req, res, next) => {
 
   
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
@@ -91,6 +94,7 @@ router.post('/login', async (req, res, next) => {
     const invalid = checkEmptyLogin(email, password);
     if(invalid){
         res.status(400).json({Error: "Empty Fields. Please Try Agian", invalid})
+        connection.release();
         return;
     }
 
@@ -99,6 +103,7 @@ router.post('/login', async (req, res, next) => {
 
         if(!user){
             res.status(401).json({ Error: "User not found" });
+            
             return;
         }
 
@@ -109,15 +114,15 @@ router.post('/login', async (req, res, next) => {
             return;        
         }
 
-        console.log("valid") //developing
         const token = jwt.sign({fname:  user.fname, lname: user.lname, email: email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
-        console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true})
         res.status(200).json({Error: null, massage: "login Successful"})
         
     }catch(err){
         res.status(500).json({Error: "Something went Wrong"})
         console.log(err)
+    }finally{
+        connection.release();
     }
 
 
@@ -191,16 +196,12 @@ function validate(fname, lname, password, mobileNum){
 
 // validatae whether already registered or not using the email. 
 async function validateEmail(email, connection){
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM user WHERE email = ?';
-        connection.query(query, [email], (err, result) =>{
-            if(err){
-                reject("Server Error"+err.message)
-                return
-            } 
-            resolve(result[0])
-            })
-        }) 
+    try {
+        const [rows] = await connection.query('SELECT * FROM user WHERE email = ?', [email]);
+        return rows[0];
+    } catch (err) {
+        throw new Error("Error checking email existence: " + err.message);
+    }
 };
 
 async function hashPassword(password){
@@ -210,21 +211,15 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(email, fname, lname, hashPassword, mobileNum, connection){
+async function savaUserCredientials(email, fname, lname, hashPassword, mobileNum, connection){
     
-    const query = 'INSERT INTO user (email, first_name, last_name, password, mobile_number, role) VALUES (?,?,?,?,?,?)';
-    return new Promise((resolve, reject)=>{
-    connection.query(query, [email, fname, lname, hashPassword, mobileNum, 'user'], (err, result) =>{
-        if(err){
-            reject("save user credietials"+err.message);
-        }else{
-            resolve(result)
-        }
-    })
-    
-    });
+    try {
+        const [result] = await connection.query('INSERT INTO user (email, first_name, last_name, password, mobile_number, role) VALUES (?,?,?,?,?,?)', [email, fname, lname, hashPassword, mobileNum, 'user']);
+        return result;
+    } catch (err) {
+        throw new Error("Error saving user credentials: " + err.message);
+    }
 
-    
 }
 
 // validate the user input mobile number
@@ -234,16 +229,12 @@ function validateSriLankanPhoneNumber(phoneNumber) {
 }
 
 async function findUser(email, connection){
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM user WHERE email = ?';
-        connection.query(query, [email], (err, result) =>{
-            if(err){
-                reject("Something Went Wrong find user "+err.message)
-                return;
-            } 
-            resolve(result[0]);
-            })
-        }) 
+    try {
+        const [rows] = await connection.query('SELECT * FROM user WHERE email = ?', [email]);
+        return rows[0];
+    } catch (err) {
+        throw new Error("Error finding user: " + err.message);
+    }
 };
 
 async function verifyPassword(password, hashPassword){

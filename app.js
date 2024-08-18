@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const {connectDb, getConnection} = require('./database/database.js')
+const {testDbConnection, getConnection, endConnection} = require('./database/database.js')
 const users = require('./routes/users.js');
 const staff = require('./routes/station_staff.js');
 const packageRouter = require('./routes/package.js');
@@ -17,7 +17,9 @@ app.use(cors());
 //syncDb()
 
 
-connectDb();
+
+
+testDbConnection();
 
 app.use(express.json())
 app.use(cookieParser())
