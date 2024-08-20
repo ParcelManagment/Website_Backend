@@ -51,8 +51,20 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
     console.log('Inserted Package:');////////////////////////////
 
   } catch (error) {
-    console.error('Error inserting newParcel',error);/////////////////
     t.rollback()
+    const foreign_key_name = "package_ibfk_1";
+    if(error.parent.errno === 1452 && error.index === foreign_key_name){
+      res.status(500).json({Error: [
+        {
+            "type": "field",
+            "value": req.body.package.tracking_device_id,
+            "msg": "Tracking device ID is not valid",
+            "path": "package.tracking_device_id",
+            "location": "body"
+        }
+    ]});
+      return;
+    }
     res.status(500).json({Error: "Something went wrong"})
     return
 
