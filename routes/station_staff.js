@@ -168,7 +168,8 @@ router.get('/stafflist', async (req, res, next)=>{
    
     if(!connection){
         console.log("database connection unavailable")
-        res.status(500).json({Error: "Database Error"})
+        res.status(500).json({Error: "Error fetching data"})
+        console.log("database connection failed")
         return
     }
     try{
@@ -286,7 +287,6 @@ async function getEmployeeById(employee_id, connection) {
         console.error("Database operation failed:", err);
         throw new Error("Server Error");
     }
-
 }
 
 async function getEmployees(connection){
@@ -296,8 +296,8 @@ async function getEmployees(connection){
         return rows;
 
     } catch (err) {
-        console.error("Database operation failed:", err);
-        throw new Error("Server Error");
+        console.error("Database operation failed:", err.code);
+        throw new Error(err);
     }
 
 }
