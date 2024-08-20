@@ -51,9 +51,12 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
     console.log('Inserted Package:');////////////////////////////
 
   } catch (error) {
+
     t.rollback()
-    const foreign_key_name = "package_ibfk_1";
-    if(error.parent.errno === 1452 && error.index === foreign_key_name){
+    console.log("new Package insertion error :" ,error.parent.code)
+
+    const foreign_key_tracking_id = "package_ibfk_1";
+    if(error.parent.errno === 1452 && error.index === foreign_key_tracking_id){
       res.status(500).json({Error: [
         {
             "type": "field",
@@ -65,6 +68,21 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
     ]});
       return;
     }
+
+    if(error.parent.errno === 1062){
+      const key = Object.keys(error.fields);
+      res.status(500).json({Error: [
+        {
+            "type": "field",
+            "value": key[0],
+            "msg": "Duplicate entry",
+            "path": error.fields.key,
+            "location": "body"
+        }
+    ]});
+      return;
+    }
+    
     res.status(500).json({Error: "Something went wrong"})
     return
 

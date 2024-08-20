@@ -173,8 +173,6 @@ router.get('/stafflist', async (req, res, next)=>{
     }
     try{
         const result = await getEmployees(connection);
-        console.log("from inside")
-        console.log(result) 
         res.send(result).status(200);
         connection.release(); 
     }catch(err){
@@ -295,7 +293,6 @@ async function getEmployees(connection){
     try{
         const query = 'SELECT employee_id, first_name, last_name, role FROM station_staff WHERE role = ? OR role = ?';
         const [rows] = await connection.query(query, ["general_staff", "not_approved"]);
-        console.log(rows)
         return rows;
 
     } catch (err) {
