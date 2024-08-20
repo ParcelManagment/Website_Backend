@@ -162,6 +162,28 @@ router.get('/logout', (req, res, next)=>{
     connection.release();
 })
 
+router.get('/stafflist', async (req, res, next)=>{
+
+    const connection = await getConnection();
+   
+    if(!connection){
+        console.log("database connection unavailable")
+        res.status(500).json({Error: "Error fetching data"})
+        console.log("database connection failed")
+        return
+    }
+    try{
+        const result = await getEmployees(connection);
+        res.send(result).status(200);
+        connection.release(); 
+    }catch(err){
+        connection.release()
+        res.status(500).send({Error: "Error fetching data"})
+        console.log("Error retriving data in stafflist route",err)
+    }
+    
+})
+
 // validation of the user inputs
 function validate(employee_id, fname, lname, password){
 
@@ -265,10 +287,20 @@ async function getEmployeeById(employee_id, connection) {
         console.error("Database operation failed:", err);
         throw new Error("Server Error");
     }
-
 }
 
+async function getEmployees(connection){
+    try{
+        const query = 'SELECT employee_id, first_name, last_name, role FROM station_staff WHERE role = ? OR role = ?';
+        const [rows] = await connection.query(query, ["general_staff", "not_approved"]);
+        return rows;
 
+    } catch (err) {
+        console.error("Database operation failed:", err.code);
+        throw new Error(err);
+    }
+
+}
 
 
 module.exports = router;  
