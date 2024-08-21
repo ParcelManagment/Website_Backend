@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const isStaff = require('../util/auth/staffAuth.js');
+const {isStaff, isStationMaster} = require('../util/auth/staffAuth.js');
 
 const  {getConnection} = require('../database/database.js');
 
@@ -130,7 +130,7 @@ router.post('/login', async (req, res, next) => {
 
 })
 
-
+/*
 router.get('/profile', isStaff, async (req, res) => {
     const connection = await getConnection();
     if (!connection) {
@@ -156,7 +156,7 @@ router.get('/profile', isStaff, async (req, res) => {
         connection.release();
     }
 });
-
+*/
 
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
@@ -186,7 +186,7 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
-router.post('/approve', async (req, res, next)=>{
+router.post('/approve', isStationMaster, async (req, res, next)=>{
     
     const connection = await getConnection();
    
