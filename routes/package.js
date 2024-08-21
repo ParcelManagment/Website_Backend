@@ -57,7 +57,7 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
 
     const foreign_key_tracking_id = "package_ibfk_1";
     if(error.parent.errno === 1452 && error.index === foreign_key_tracking_id){
-      res.status(500).json({Error: [
+      res.status(400).json({Error: [
         {
             "type": "field",
             "value": req.body.package.tracking_device_id,
@@ -71,7 +71,7 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
 
     if(error.parent.errno === 1062){
       const key = Object.keys(error.fields);
-      res.status(500).json({Error: [
+      res.status(400).json({Error: [
         {
             "type": "field",
             "value": key[0],
@@ -86,8 +86,6 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
     res.status(500).json({Error: "Something went wrong"})
     return
 
-
-    // error can be accured due to foreign key constraint violation of data (duplicate tag_id)
   }
 })
 

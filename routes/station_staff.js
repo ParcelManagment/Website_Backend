@@ -184,6 +184,37 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
+router.post('/approve',async (req, res, next)=>{
+    
+    const connection = await getConnection();
+   
+    if(!connection){
+        console.log("database connection unavailable")
+        res.status(500).json({Error: "Error fetching data"})
+        console.log("database connection failed")
+        return
+    }
+    try{
+        const {affectedRows, changedRows } = await updateRole(connection,req.body.employee_id);
+        
+        connection.release();
+        if(affectedRows ==0){
+            res.status(400).json({Error: "Employee Not Found"})
+            return
+        }
+        if(changedRows==0 && affectedRows ==1){ 
+            res.status(409).json({Error: "Already Approved to General Staff"})
+            return
+        }
+        res.status(200).send("Successfully Approved")
+    }catch(err){
+        console.log(err)
+        connection.release()
+        res.status(500).json({Error : "Approvel Failed"})
+    }
+    
+})
+
 // validation of the user inputs
 function validate(employee_id, fname, lname, password){
 
@@ -299,9 +330,20 @@ async function getEmployees(connection){
         console.error("Database operation failed:", err.code);
         throw new Error(err);
     }
-
 }
 
+async function updateRole(connection, employee_id){
+    try{
+        const query = "UPDATE station_staff SET role= ? WHERE employee_id = ?";
+        const result = await connection.query(query, ["general_staff", employee_id])
+        //console.log(result[0])
+        return result[0];
+    }catch(error){
+        console.log("error occured")
+        console.log(error)
+        throw new Error("error")
+    }
+}
 
 module.exports = router;  
 
