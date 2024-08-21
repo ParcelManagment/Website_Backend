@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const isStaff = require('../util/auth/staffAuth.js');
+const {isStaff, isStationMaster} = require('../util/auth/staffAuth.js');
 
 const  {getConnection} = require('../database/database.js');
 
@@ -25,6 +25,8 @@ router.post('/signup', async (req, res, next) => {
     const fname = data.fname;
     const lname = data.lname;
     const password = data.password;
+    const station = data.station;
+    
 
 
     if(!employee_id || !fname || !lname || !password){
@@ -60,7 +62,7 @@ router.post('/signup', async (req, res, next) => {
 
         // SAVE DATA IN DATABSE
         const token = jwt.sign({fname: fname, lname: lname,  employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
-        const result = await savaUserCredientials(employee_id, fname, lname, hash, connection)
+        const result = await savaUserCredientials(employee_id, fname, lname, hash, station, connection)
         res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
         })
@@ -128,7 +130,7 @@ router.post('/login', async (req, res, next) => {
 
 })
 
-
+/*
 router.get('/profile', isStaff, async (req, res) => {
     const connection = await getConnection();
     if (!connection) {
@@ -154,7 +156,7 @@ router.get('/profile', isStaff, async (req, res) => {
         connection.release();
     }
 });
-
+*/
 
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
@@ -184,7 +186,7 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
-router.post('/approve',async (req, res, next)=>{
+router.post('/approve', isStationMaster, async (req, res, next)=>{
     
     const connection = await getConnection();
    
@@ -275,11 +277,11 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- async function savaUserCredientials(employee_id,fname, lname, hashPassword, connection){
+ async function savaUserCredientials(employee_id,fname, lname, hashPassword, station, connection){
     
     try {
-        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password) VALUES (?, ?, ?, ?)';
-        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword]);
+        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password, station) VALUES (?, ?, ?, ?, ?)';
+        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword, station]);
         return result;
     } catch (err) {
         console.error("Database operation failed:", err);
