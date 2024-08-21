@@ -184,7 +184,7 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
-router.post('/approve',async (req, res, next)=>{
+router.post('/approve', async (req, res, next)=>{
     
     const connection = await getConnection();
    
