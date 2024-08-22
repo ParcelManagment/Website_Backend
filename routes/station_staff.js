@@ -2,29 +2,31 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const isStaff = require('../util/auth/staffAuth.js');
+const {isStaff, isStationMaster} = require('../util/auth/staffAuth.js');
 
-const  {connectDb,getConnection, endConnection} = require('../database/database.js');
+const  {getConnection} = require('../database/database.js');
 
 
 
 router.post('/signup', async (req, res, next) => {
-    
+
+  
     // database connection
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
         return;
     }
 
-
-    // extracting the submitted data
+      // extracting the submitted data
     const data = req.body;
     const employee_id = data.employee_id;
     const fname = data.fname;
     const lname = data.lname;
     const password = data.password;
+    const station = data.station;
+    
 
 
     if(!employee_id || !fname || !lname || !password){
@@ -32,18 +34,18 @@ router.post('/signup', async (req, res, next) => {
         return;
     }
     
-
-
     // checking the user email is already registered
     try{
         const result = await registered(employee_id, connection);
         if(result.length>0){
             res.status(409).json({Error: "User has already registered"})
+            connection.release();
             return;
         }
         
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
+        connection.release();
         return;
     }
     
@@ -51,6 +53,7 @@ router.post('/signup', async (req, res, next) => {
     const validationError = validate(employee_id, fname, lname, password);
     if(validationError){
         res.status(400).json({Error: validationError})
+        connection.release();
         return;
     }
     
@@ -59,7 +62,7 @@ router.post('/signup', async (req, res, next) => {
 
         // SAVE DATA IN DATABSE
         const token = jwt.sign({fname: fname, lname: lname,  employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
-        const result = await savaUserCredientials(employee_id, fname, lname, hash, connection)
+        const result = await savaUserCredientials(employee_id, fname, lname, hash, station, connection)
         res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
         })
@@ -73,7 +76,7 @@ router.post('/signup', async (req, res, next) => {
         }
 
     }finally{
-       // endConnection()
+        connection.release();
     }
 });
 
@@ -81,7 +84,7 @@ router.post('/signup', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
 
   
-    const connection = getConnection();
+    const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
@@ -95,6 +98,7 @@ router.post('/login', async (req, res, next) => {
     // check empty fields
     if (!employee_id || !password) {
         res.status(400).json({ Error: "Empty Fields. Please Try Again" });
+        connection.release();
         return;
     }
 
@@ -117,6 +121,8 @@ router.post('/login', async (req, res, next) => {
 
     } catch (err) {
         res.status(500).json({ Error: "Something went Wrong while login" });
+    }finally{
+        connection.release();
     }
 
 
@@ -124,9 +130,9 @@ router.post('/login', async (req, res, next) => {
 
 })
 
-
+/*
 router.get('/profile', isStaff, async (req, res) => {
-    const connection = getConnection();
+    const connection = await getConnection();
     if (!connection) {
         console.log("Database connection unavailable");
         res.status(500).json({ Error: "Database Error" });
@@ -146,13 +152,69 @@ router.get('/profile', isStaff, async (req, res) => {
 
     } catch (err) {
         res.status(500).json({ Error: err.message });
+    }finally{
+        connection.release();
     }
 });
-
+*/
 
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
     res.status(201).json({message: "successfully logout"})
+    connection.release();
+})
+
+router.get('/stafflist', async (req, res, next)=>{
+
+    const connection = await getConnection();
+   
+    if(!connection){
+        console.log("database connection unavailable")
+        res.status(500).json({Error: "Error fetching data"})
+        console.log("database connection failed")
+        return
+    }
+    try{
+        const result = await getEmployees(connection);
+        res.send(result).status(200);
+        connection.release(); 
+    }catch(err){
+        connection.release()
+        res.status(500).send({Error: "Error fetching data"})
+        console.log("Error retriving data in stafflist route",err)
+    }
+    
+})
+
+router.post('/approve', isStationMaster, async (req, res, next)=>{
+    
+    const connection = await getConnection();
+   
+    if(!connection){
+        console.log("database connection unavailable")
+        res.status(500).json({Error: "Error fetching data"})
+        console.log("database connection failed")
+        return
+    }
+    try{
+        const {affectedRows, changedRows } = await updateRole(connection,req.body.employee_id);
+        
+        connection.release();
+        if(affectedRows ==0){
+            res.status(400).json({Error: "Employee Not Found"})
+            return
+        }
+        if(changedRows==0 && affectedRows ==1){ 
+            res.status(409).json({Error: "Already Approved to General Staff"})
+            return
+        }
+        res.status(200).send("Successfully Approved")
+    }catch(err){
+        console.log(err)
+        connection.release()
+        res.status(500).json({Error : "Approvel Failed"})
+    }
+    
 })
 
 // validation of the user inputs
@@ -196,17 +258,15 @@ function validate(employee_id, fname, lname, password){
 
 // validatae whether already registered or not using the employee_id. 
 async function registered(employee_id, connection){
-   
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) =>{
-            if(err){
-                reject("Server Error")
-                return
-            } 
-            resolve(result);
-            })
-        }) 
+  
+    try {
+        const [rows] = await connection.query('SELECT * FROM station_staff WHERE employee_id = ?', [employee_id]);
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+
 };
 
 
@@ -217,36 +277,28 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(employee_id,fname, lname, hashPassword, connection){
+ async function savaUserCredientials(employee_id,fname, lname, hashPassword, station, connection){
     
-    const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password) VALUES (?,?,?,?)';
-    return new Promise((resolve, reject)=>{
-    connection.query(query, [employee_id, fname, lname, hashPassword], (err, result) =>{
-        if(err){
-            reject(err);
-        }else{
-            resolve(result)
-        }
-    })
-   
-    
-    });
+    try {
+        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password, station) VALUES (?, ?, ?, ?, ?)';
+        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword, station]);
+        return result;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
 
-  
 }
 
 
 async function findUser(employee_id, connection){
-    return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) =>{
-            if(err){
-                reject("Something Went Wrong")
-                return;
-            } 
-            resolve(result[0]);
-            })
-        }) 
+    try {
+        const [rows] = await connection.query('SELECT * FROM station_staff WHERE employee_id = ?', [employee_id]);
+        return rows[0];
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
 };
 
 
@@ -256,24 +308,44 @@ async function verifyPassword(password, hashPassword){
 
 
 async function getEmployeeById(employee_id, connection) {
-    return new Promise((resolve, reject) => {
+   try{
         const query = 'SELECT  employee_id, first_name, last_name, role FROM station_staff WHERE employee_id = ?';
-        connection.query(query, [employee_id], (err, result) => {
-            if (err) {
-                reject("Something Went Wrong");
-                return;
-            }
-            if (result.length == 0) {
-                reject("Employee not found");
-                return;
-            }
-            resolve(result[0]);
-        });
-    });
+        const [rows] = await connection.query(query, [employee_id]);
+
+        if (rows.length === 0) {
+            throw new Error("Employee not found");
+        }
+        return rows[0];
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
 }
 
+async function getEmployees(connection){
+    try{
+        const query = 'SELECT employee_id, first_name, last_name, role FROM station_staff WHERE role = ? OR role = ?';
+        const [rows] = await connection.query(query, ["general_staff", "not_approved"]);
+        return rows;
 
+    } catch (err) {
+        console.error("Database operation failed:", err.code);
+        throw new Error(err);
+    }
+}
 
+async function updateRole(connection, employee_id){
+    try{
+        const query = "UPDATE station_staff SET role= ? WHERE employee_id = ?";
+        const result = await connection.query(query, ["general_staff", employee_id])
+        //console.log(result[0])
+        return result[0];
+    }catch(error){
+        console.log("error occured")
+        console.log(error)
+        throw new Error("error")
+    }
+}
 
 module.exports = router;  
 

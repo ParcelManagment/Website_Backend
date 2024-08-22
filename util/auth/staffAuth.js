@@ -10,16 +10,36 @@ const isStaff = (req, res, next) => {
     }
 
     try{
-        const payload = authoByRoles(token, ["station_master","general_staff", "not_approved"]);
+        const payload = authoByRoles(token, ["station_master","general_staff"]);
         req.staff_id = payload.employee_id;
         req.staff_role = payload.role;
         next()
 
     }catch(error){
-        res.status(401).json(error.message)
+        res.status(401).json({Error:error.message})
         return;
     }
-    
 }
+const isStationMaster = (req, res, next)=>{
+   
+    const token = req.cookies.token;
+    if(!token){
+        res.status(401).json("No Token Provided");
+        return
+    }
 
-module.exports = isStaff;
+    try{
+    const payload = authoByRoles(token, ["station_master"]);
+        req.staff_id = payload.employee_id;
+        req.staff_role = payload.role;
+        next()
+
+    }catch(error){
+        res.status(401).json({Error:error.message})
+        return;
+    } 
+}
+    
+
+
+module.exports = {isStaff, isStationMaster};

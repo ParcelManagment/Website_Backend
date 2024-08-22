@@ -3,7 +3,7 @@ const router = express.Router();
 const Package = require("../models/package");
 const validateNewPackage = require('../util/validation/package/input');
 const findParticipant = require("../util/validation/participant/findParticipant");
-const isStaff = require('../util/auth/staffAuth');
+const {isStaff} = require('../util/auth/staffAuth');
 const sequelize = require('../database/connectSequelize');
 const generateId = require('../util/IdGen/generateId');
 const validateSender = require('../util/validation/participant/validateSender');
@@ -51,13 +51,41 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
     console.log('Inserted Package:');////////////////////////////
 
   } catch (error) {
-    console.error('Error inserting newParcel',error);/////////////////
+
     t.rollback()
+    console.log("new Package insertion error :" ,error.parent.code)
+
+    const foreign_key_tracking_id = "package_ibfk_1";
+    if(error.parent.errno === 1452 && error.index === foreign_key_tracking_id){
+      res.status(400).json({Error: [
+        {
+            "type": "field",
+            "value": req.body.package.tracking_device_id,
+            "msg": "Tracking device ID is not valid",
+            "path": "package.tracking_device_id",
+            "location": "body"
+        }
+    ]});
+      return;
+    }
+
+    if(error.parent.errno === 1062){
+      const key = Object.keys(error.fields);
+      res.status(400).json({Error: [
+        {
+            "type": "field",
+            "value": key[0],
+            "msg": "Duplicate entry",
+            "path": error.fields.key,
+            "location": "body"
+        }
+    ]});
+      return;
+    }
+    
     res.status(500).json({Error: "Something went wrong"})
     return
 
-
-    // error can be accured due to foreign key constraint violation of data (duplicate tag_id)
   }
 })
 
