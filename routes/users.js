@@ -60,9 +60,17 @@ router.post('/signup', async (req, res, next) => {
         // CREATE JWT AND SAVE DATA IN DATABSE
         const token = jwt.sign({fname:  fname, lname: lname, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
         const result = await savaUserCredientials(email, fname, lname, hash, mobileNum, connection)
-        res.cookie('token',token,{httpOnly: true}) // set cookie
-        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
-        })
+        //res.cookie('token',token,{httpOnly: true}) // set cookie
+        
+        res.status(201).json({
+          Error: null,
+          message: "Registration Successful",
+          userId: result.insertId,
+          token, // Send the token in the response body
+        });
+
+
+        
 
     }catch(err){
         try{
@@ -93,6 +101,7 @@ router.post('/login', async (req, res, next) => {
     // check empty fields
     const invalid = checkEmptyLogin(email, password);
     if(invalid){
+
         res.status(400).json({Error: "Empty Fields. Please Try Agian", invalid})
         connection.release();
         return;
@@ -115,6 +124,7 @@ router.post('/login', async (req, res, next) => {
         }
 
         const token = jwt.sign({fname:  user.fname, lname: user.lname, email: email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
+        console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true})
         res.status(200).json({Error: null, massage: "login Successful"})
         
@@ -124,9 +134,6 @@ router.post('/login', async (req, res, next) => {
     }finally{
         connection.release();
     }
-
-
-
 
 })
 
