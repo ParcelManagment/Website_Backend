@@ -98,6 +98,7 @@ router.post('/login', async (req, res, next) => {
     // check empty fields
     const invalid = checkEmptyLogin(email, password);
     if(invalid){
+
         res.status(400).json({Error: "Empty Fields. Please Try Agian", invalid})
         return;
     }
@@ -126,7 +127,7 @@ router.post('/login', async (req, res, next) => {
        // res.status(200).json({Error: null, massage: "login Successful"})
        res.status(200).json({
          Error: null,
-         message: "Login Successful",
+         message: "Login Successful!",
          userId: user.id,
          token, // Send the token in the response body
        });
