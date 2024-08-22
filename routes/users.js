@@ -57,9 +57,17 @@ router.post('/signup', async (req, res, next) => {
         // CREATE JWT AND SAVE DATA IN DATABSE
         const token = jwt.sign({fname:  fname, lname: lname, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
         const result = await savaUserCredientials(email, fname, lname, hash, mobileNum, connection)
-        res.cookie('token',token,{httpOnly: true}) // set cookie
-        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
-        })
+        //res.cookie('token',token,{httpOnly: true}) // set cookie
+        
+        res.status(201).json({
+          Error: null,
+          message: "Registration Successful",
+          userId: result.insertId,
+          token, // Send the token in the response body
+        });
+
+
+        
 
     }catch(err){
         try{
@@ -112,16 +120,21 @@ router.post('/login', async (req, res, next) => {
         console.log("valid") //developing
         const token = jwt.sign({fname:  user.fname, lname: user.lname, email: email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
         console.log('jwt -- ', token)  // developing
-        res.cookie('token',token,{httpOnly: true})
-        res.status(200).json({Error: null, massage: "login Successful"})
+       // res.cookie('token',token,{httpOnly: true})
         
+
+       // res.status(200).json({Error: null, massage: "login Successful"})
+       res.status(200).json({
+         Error: null,
+         message: "Login Successful",
+         userId: user.id,
+         token, // Send the token in the response body
+       });
+
     }catch(err){
         res.status(500).json({Error: "Something went Wrong"})
         console.log(err)
     }
-
-
-
 
 })
 
