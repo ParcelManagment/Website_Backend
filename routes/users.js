@@ -250,4 +250,69 @@ async function verifyPassword(password, hashPassword){
     return await bcrypt.compare(password, hashPassword);
 }
 
+router.put('/edituser/:id',async (req, res) => {
+    const userId = req.params.id;
+    const {first_name, last_name, password, email, mobile_number} = req.body;
+
+    let updates = [];
+    let values = []; 
+
+    if (first_name) {
+        updates.push("first_name = ?");
+        values.push(first_name);
+    }
+
+    if (last_name) {
+        updates.push("last_name = ?");
+        values.push(last_name);
+    }
+
+    if (password) {
+        updates.push("password = ?");
+        values.push(password);
+    }
+
+    if (email){
+        updates.push("email = ?");
+        values.push(email);
+    }
+
+    if (mobile_number) {
+        updates.push("mobile_number = ?");
+        values.push(mobile_number);
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({ message: "Provide at least one field"});
+    }
+
+    values.push(userId);
+
+    try {
+        const con = await getConnection();
+        const sql = `UPDATE user SET ${updates.join(', ')} WHERE id = ?`;
+
+        
+
+        con.query(sql, values, (err, result)=> {
+            if (err) {
+                console.error("Error updating user:", err);
+                return res.status(500).json({ message: "Database error", error: err});
+            }
+    
+            res.status(200).json({ message: "User updated successfully"});
+    
+        });
+
+    }
+
+    catch (error){
+
+        console.error("Error getting database connection:", error);
+        res.status(500).json({message: "Internal server error"});
+
+    }
+  
+});
+
 module.exports = router;

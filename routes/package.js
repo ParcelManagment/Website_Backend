@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require("mysql2");
+const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
 const Package = require("../models/package");
 const validateNewPackage = require('../util/validation/package/input');
 const findParticipant = require("../util/validation/participant/findParticipant");
@@ -133,6 +134,11 @@ router.get('/fetchbyid/:id', (req, res) => {
         }
     });
 });
+
+
+
+module.exports = router;
+
 
 
 
