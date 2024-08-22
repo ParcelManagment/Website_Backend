@@ -130,7 +130,7 @@ router.post('/login', async (req, res, next) => {
 
 })
 
-/*
+
 router.get('/profile', isStaff, async (req, res) => {
     const connection = await getConnection();
     if (!connection) {
@@ -156,7 +156,7 @@ router.get('/profile', isStaff, async (req, res) => {
         connection.release();
     }
 });
-*/
+
 
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
