@@ -53,7 +53,7 @@ router.post('/new',isStaff, validateNewPackage, findParticipant, userValiadation
   } catch (error) {
 
     t.rollback()
-    console.log("new Package insertion error :" ,error.parent.code)
+    console.log("new Package insertion error :" ,error)
 
     const foreign_key_tracking_id = "package_ibfk_1";
     if(error.parent.errno === 1452 && error.index === foreign_key_tracking_id){
