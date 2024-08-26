@@ -71,7 +71,7 @@ router.post("/custom", async (req, res, next) => {
 
 if (!response.ok) {
   res.status(200).json({
-    customMessage:"Error",
+    customMessage:"Error from ML server",
     uId,
     deviceId,
     dateTime,
