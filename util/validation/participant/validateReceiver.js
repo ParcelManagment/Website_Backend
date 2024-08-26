@@ -17,14 +17,15 @@ const validateReceiver = [
       }
 
       try {
-        const newReceiver = await User.create({
-          email: req.body.receiver.email,
-          first_name: req.body.receiver.first_name,
-          last_name: req.body.receiver.last_name,
-          mobile_number: req.body.receiver.mobile_number
-        }, { transaction: req.transaction });
-        
-        req.body.receiver.receiver_id = newReceiver.id;
+        const newReceiver = await User.findOrCreate({
+          where: { email: req.body.receiver.email },
+          defaults:{
+            first_name: req.body.receiver.first_name,
+            last_name: req.body.receiver.last_name,
+            mobile_number: req.body.receiver.mobile_number
+          },
+           transaction: req.transaction });
+        req.body.receiver.receiver_id = newReceiver[0].dataValues.id;
         next();
       } catch (error) {
         console.log('Error while creating new Receiver', error);
