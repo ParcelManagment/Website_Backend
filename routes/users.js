@@ -312,7 +312,37 @@ router.put('/edituser/:id',async (req, res) => {
         res.status(500).json({message: "Internal server error"});
 
     }
+
+    
   
 });
+
+// New route for deleting a user by ID
+router.delete('/deleteuser/:id', async (req, res) => {
+    const userId = req.params.id;
+
+    try {
+        const con = await getConnection();
+        const sql = 'DELETE FROM user WHERE id = ?';
+
+        con.query(sql, [userId], (err, result) => {
+            if (err) {
+                console.error('Error deleting user:', err);
+                return res.status(500).json({ message: 'Database error', error: err });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.status(200).json({ message: 'User deleted successfully' });
+        });
+
+    } catch (error) {
+        console.error('Error getting database connection:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;
