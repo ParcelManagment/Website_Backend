@@ -1,5 +1,7 @@
 const express = require('express')
+const cors = require('cors'); 
 const app = express()
+
 const {connectDb, getConnection} = require('./database/database.js')
 const users = require('./routes/users.js');
 const staff = require('./routes/station_staff.js');
@@ -16,7 +18,11 @@ const port = 3000
 
 
 
-
+app.use(cors({
+  origin: 'http://localhost:3001', // Adjust to your front-end's URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 
 

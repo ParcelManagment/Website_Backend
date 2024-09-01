@@ -11,7 +11,7 @@ const isStaff = require('../util/auth/staffAuth');
 const con = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: null,
+    password: "root",
     database: "parcel"
 });
 
@@ -95,7 +95,7 @@ router.get('/fetchbyid/:id', (req, res) => {
             u.email AS receiver_email, 
             u.mobile_number AS receiver_mobile_number
         FROM 
-            user u
+            user_nr u
         JOIN 
             package p ON u.id = p.receiver_id
         WHERE 
@@ -153,5 +153,113 @@ router.get('/tracking', (req, res) => {
         }
     });
 });
+
+// New route for deleting a package by ID
+// New route for deleting a package by ID
+router.delete('/deletepackage/:id', async (req, res) => {
+    const packageId = req.params.id;
+
+    try {
+        // Begin transaction
+        con.beginTransaction(async (err) => {
+            if (err) {
+                console.error('Transaction Error:', err);
+                res.status(500).json({ Error: "Database Transaction Error" });
+                return;
+            }
+
+            // Delete related data from trackingdevice
+            con.query('DELETE FROM trackingdevice WHERE package_id = ?', [packageId], (err, result) => {
+                if (err) {
+                    console.error('Error deleting from trackingdevice:', err);
+                    return con.rollback(() => {
+                        res.status(500).json({ Error: "Error deleting tracking data" });
+                    });
+                }
+
+                // Delete the package itself
+                con.query('DELETE FROM package WHERE package_id = ?', [packageId], (err, result) => {
+                    if (err) {
+                        console.error('Error deleting package:', err);
+                        return con.rollback(() => {
+                            res.status(500).json({ Error: "Error deleting package" });
+                        });
+                    }
+
+                    // If no errors, commit the transaction
+                    con.commit((err) => {
+                        if (err) {
+                            console.error('Error committing transaction:', err);
+                            return con.rollback(() => {
+                                res.status(500).json({ Error: "Transaction Commit Error" });
+                            });
+                        }
+                        res.status(200).json({ message: 'Package and associated data deleted successfully' });
+                    });
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Unexpected Error deleting package:', error);
+        res.status(500).json({ message: 'Unexpected Database Error', error });
+    }
+});
+
+
+router.put('/edituser/:id', async (req, res) => {
+    const packageId = req.params.id;
+    const {  receiver_first_name, receiver_last_name, receiver_email, receiver_mobile_number } = req.body;
+
+    let updates = [];
+    let values = [];
+
+    // Check if receiver-related fields are provided and add them to the update list
+    if (receiver_first_name) {
+        updates.push("first_name = ?");
+        values.push(receiver_first_name);
+    }
+
+    if (receiver_last_name) {
+        updates.push("last_name = ?");
+        values.push(receiver_last_name);
+    }
+
+    if (receiver_email) {
+        updates.push("email = ?");
+        values.push(receiver_email);
+    }
+
+    if (receiver_mobile_number) {
+        updates.push("mobile_number = ?");
+        values.push(receiver_mobile_number);
+    }
+
+    // If no fields are provided, return an error
+    if (updates.length === 0) {
+        return res.status(400).json({ message: "Provide at least one field to update." });
+    }
+
+    values.push(packageId);
+    //const con = await getConnection();
+    const updateQuery = `UPDATE user_nr SET ${updates.join(', ')} WHERE id = (SELECT receiver_id FROM package WHERE package_id = ?)`;
+    try {
+       
+        //const sql = `UPDATE user_nr SET ${updates.join(', ')} WHERE id = ?`;
+
+        con.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error("Error updating user:", err);
+                return res.status(500).json({ message: "Database error", error: err });
+            }
+
+            res.status(200).json({ message: "Reciver updated successfully" });
+        });
+
+    } catch (error) {
+        console.error("Error getting database connection:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 module.exports = router;

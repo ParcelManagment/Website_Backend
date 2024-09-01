@@ -252,7 +252,7 @@ async function verifyPassword(password, hashPassword){
 
 router.put('/edituser/:id',async (req, res) => {
     const userId = req.params.id;
-    const {first_name, last_name, password, email, mobile_number} = req.body;
+    const {first_name, last_name,email, mobile_number} = req.body;
 
     let updates = [];
     let values = []; 
@@ -265,11 +265,6 @@ router.put('/edituser/:id',async (req, res) => {
     if (last_name) {
         updates.push("last_name = ?");
         values.push(last_name);
-    }
-
-    if (password) {
-        updates.push("password = ?");
-        values.push(password);
     }
 
     if (email){
@@ -343,6 +338,7 @@ router.delete('/deleteuser/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 module.exports = router;
