@@ -69,12 +69,7 @@ router.post('/createuser', async (req, res, next)=>{
       }
   
         // extracting the submitted data
-      const data = req.body;
-      const employee_id = data.employee_id;
-      const fname = data.fname;
-      const lname = data.lname;
-      const station = data.station;
-      const role = data.role;
+      const {employee_id, fname, lname, station, role} = req.body
       const password = employee_id;
       
       
@@ -130,6 +125,91 @@ router.post('/createuser', async (req, res, next)=>{
       }
 })
 
+router.post('/createdevice', async(req,res,next)=>{
+     // database connection
+     const connection = await getConnection();
+     if(!connection){
+         console.log("Database connection unavailable")
+         res.status(500).json({Error: "Database Error"})
+         return;
+     }
+       // extracting the submitted data
+    const {mac_id, sim_num} = req.body;
+     
+    if(!mac_id || !sim_num){
+        res.status(400).json({Error: "Please submit all the required field"})
+        return;
+    }
+
+
+     try{
+        const result = await findDevice(mac_id, connection);
+        if(result.length>0){
+            res.status(409).json({Error: "Device has already registered"})
+            connection.release();
+            return;
+        }
+        
+    }catch(err){
+        res.status(500).json({Error: err, message: 'Registration Failed'})
+        connection.release();
+        return;
+    }
+       // 0--------->>>>>>>>>>>>>>>>>> importatnt <<<<<<<<<<<<<<<<<<<<<------------0
+    // validate device attributes
+   // const validationError = validate(mac_id, sim_num);    /// need to be implemented
+   // !!!!!#####%%%^^^^^^^^^ importatnt ^^^^^^%%%#####!!!!!!!
+   /* if(validationError){
+        res.status(400).json({Error: validationError})
+        connection.release();
+        return;
+    }
+    */
+    try{
+        
+        const result = await createDevice(mac_id,sim_num, connection)
+        res.status(201).json({Error: null, message: 'Registration Successfull', device_id: result.insertId})
+
+    }catch(err){
+        try{
+        console.log("registration error occured", err);  // developing//////////////////////////////////////////////////
+        res.status(500).json({Error: "Registration Failed"})
+        }catch(error){
+            console.log('error occured while responding to the client')
+        }
+
+    }finally{
+        connection.release();
+    }
+
+})
+
+router.get('/alldevices', async(req,res,next)=>{
+   
+    const connection = await getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
+
+    try{
+        const result = await allDevices(connection);
+        if(result.length==0){
+            res.status(200).json({Error: "Zero devices"})
+            connection.release();
+            return;
+        }else{
+            res.status(200).json(result);
+        }
+        
+    }catch(err){
+        res.status(500).json({Error: err, message: 'Failed to fetch data'})
+        connection.release();
+        return;
+    }
+    
+})
 
 async function findUser(employee_id, connection){
     try {
@@ -140,6 +220,7 @@ async function findUser(employee_id, connection){
         throw new Error("Server Error");
     }
 };
+
 
 // validation of the user inputs
 function validate(employee_id, fname, lname, password, station, role){
@@ -230,12 +311,46 @@ async function registered(employee_id, connection){
         console.error("Database operation failed:", err);
         throw new Error("Server Error");
     }
-
 };
+
+async function findDevice(mac_id, connection){
+  
+    try {
+        const [rows] = await connection.query('SELECT * FROM trackingDevice WHERE MAC_id = ?', [mac_id]);
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+};
+
 async function hashPassword(password){
     const saltRound = 10;
     const hash = await bcrypt.hash(password,saltRound);
     return hash;
 }
 
+async function createDevice(mac_id,sim_num,connection){
+    
+    try {
+        const query = 'INSERT INTO trackingDevice (MAC_id, sim_num) VALUES (?, ?)';
+        const [result] = await connection.query(query, [mac_id,sim_num]);
+        return result;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+
+}
+
+async function allDevices( connection){
+  
+    try {
+        const [rows] = await connection.query('SELECT * FROM trackingDevice');
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+};
 module.exports = router;
