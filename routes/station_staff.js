@@ -7,7 +7,7 @@ const {isStaff, isStationMaster} = require('../util/auth/staffAuth.js');
 const  {getConnection} = require('../database/database.js');
 
 
-
+/*
 router.post('/signup', async (req, res, next) => {
 
   
@@ -29,7 +29,7 @@ router.post('/signup', async (req, res, next) => {
     
 
 
-    if(!employee_id || !fname || !lname || !password){
+    if(!employee_id || !fname || !lname || !password || !station){
         res.status(400).json({Error: "Please submit all the required field"})
         return;
     }
@@ -50,7 +50,7 @@ router.post('/signup', async (req, res, next) => {
     }
     
     // validate the user inputs
-    const validationError = validate(employee_id, fname, lname, password);
+    const validationError = validate(employee_id, fname, lname, password, station);
     if(validationError){
         res.status(400).json({Error: validationError})
         connection.release();
@@ -78,7 +78,7 @@ router.post('/signup', async (req, res, next) => {
     }finally{
         connection.release();
     }
-});
+});*/
 
 
 router.post('/login', async (req, res, next) => {
@@ -216,79 +216,6 @@ router.post('/approve', isStationMaster, async (req, res, next)=>{
     }
     
 })
-
-// validation of the user inputs
-function validate(employee_id, fname, lname, password){
-
-    if(typeof fname !== 'string'){
-        return 'Invalid Username'
-    }
-
-    if (fname.length < 3 || fname.length > 20) {
-        return "invalid username, too short or too long"
-      }
-    
-      if(typeof lname !== 'string'){
-        return 'Invalid Username'
-    }
-
-    if (lname.length < 3 || lname.length > 20) {
-        return "invalid username, too short or too long"
-      }
-
-    if(typeof password !== 'string'){
-        return 'Invalid Password'
-    }
-
-    if(password.length<6){
-        return "Password should have minimum 6 characters"
-    }
-    const containsUppercase = /[A-Z]/.test(password);
-    const containsSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if(!containsUppercase || !containsSymbol){
-        return "Oops! Make sure your password has at least one uppercase letter and one special character."
-    }
-    if(!(/^\d{5}$/.test(employee_id))){
-        return "invalid employee number"
-    }
-
-}
-
-
-// validatae whether already registered or not using the employee_id. 
-async function registered(employee_id, connection){
-  
-    try {
-        const [rows] = await connection.query('SELECT * FROM station_staff WHERE employee_id = ?', [employee_id]);
-        return rows;
-    } catch (err) {
-        console.error("Database operation failed:", err);
-        throw new Error("Server Error");
-    }
-
-};
-
-
-async function hashPassword(password){
-    const saltRound = 10;
-    const hash = await bcrypt.hash(password,saltRound);
-    return hash;
-}
-
-// save user details in the database
- async function savaUserCredientials(employee_id,fname, lname, hashPassword, station, connection){
-    
-    try {
-        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password, station) VALUES (?, ?, ?, ?, ?)';
-        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword, station]);
-        return result;
-    } catch (err) {
-        console.error("Database operation failed:", err);
-        throw new Error("Server Error");
-    }
-
-}
 
 
 async function findUser(employee_id, connection){

@@ -6,6 +6,7 @@ const staff = require('./routes/station_staff.js');
 const packageRouter = require('./routes/package.js');
 const message = require('./routes/message.js');
 const deviceIds = require("./routes/deviceIds.js");
+const admin = require("./routes/admin.js");
 const cookieParser = require('cookie-parser');
 const sequelize = require("./database/connectSequelize.js");
 const syncDb = require('./database/syncDb');
@@ -26,11 +27,12 @@ testDbConnection();
 app.use(express.json())
 app.use(cookieParser())
 
+app.use('/admin', admin);  // admin routes for employee iot device management
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
 app.use("/message",message); //chat bot can use from this.
-app.use("/deviceIds", deviceIds); //
+app.use("/deviceIds", deviceIds); 
 app.get('/logout', (req, res, next)=>{
   res.clearCookie('token');
   res.send("loggedout")
