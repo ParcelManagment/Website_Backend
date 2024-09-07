@@ -1,0 +1,113 @@
+CREATE DATABASE parcel; 
+use parcel;
+CREATE TABLE user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    mobile_number INT(10) NOT NULL,
+    role ENUM('user', 'user_nr') NOT NULL DEFAULT 'user_nr',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE station_staff (
+    employee_id INT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    station VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM("station_master","general_staff", "admin") NOT NULL, 
+    approved_by INT ,
+    created_by INT ,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (approved_by) REFERENCES station_staff(employee_id),
+    FOREIGN KEY (created_by) REFERENCES station_staff(employee_id)
+); 
+
+CREATE TABLE trackingDevice (
+  device_id INT PRIMARY KEY AUTO_INCREMENT,
+  Longitude DECIMAL(10, 6),
+  Latitude DECIMAL(10, 6),
+  device_status ENUM('in_use', 'not_in_use') DEFAULT 'in_use' NOT NULL,
+  Last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  MAC_id VARCHAR(20) UNIQUE NOT NULL,
+  born_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  sim_num VARCHAR(20) UNIQUE NOT NULL 
+);
+
+CREATE TABLE package (
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
+  package_id CHAR(8) UNIQUE NOT NULL,
+  tag_id VARCHAR(255) UNIQUE DEFAULT NULL,
+  sender_id INTEGER NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  type ENUM("vehicle", "furniture", "food", "grocery", "chemical", "other") NOT NULL,
+  package_condition ENUM('new', 'used') NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  price INTEGER NOT NULL,
+  tracking_device_id INTEGER,
+  submitted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  out_for_delivery TIMESTAMP,
+  arrived TIMESTAMP,
+  completed BOOLEAN DEFAULT FALSE,
+  cancelled BOOLEAN DEFAULT FALSE,
+  submitted_by INT NOT NULL,
+  FOREIGN KEY (submitted_by) REFERENCES station_staff (employee_id),
+  FOREIGN KEY (receiver_id) REFERENCES user (id),
+  FOREIGN KEY (sender_id) REFERENCES user (id)
+); 
+
+
+DELIMITER //
+
+CREATE TRIGGER before_user_insert
+BEFORE INSERT ON user
+FOR EACH ROW
+BEGIN
+    IF NEW.role = 'user' AND NEW.password IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Password cannot be NULL for role user';
+    END IF;
+    IF NEW.role = 'user_nr' AND NEW.password IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Password must be NULL for role user_nr';
+    END IF;
+END //
+
+DELIMITER ;
+
+
+
+INSERT INTO user (
+    first_name, last_name, email, password, mobile_number, role, created_at
+) VALUES (
+    'Alice', 'Smith', 'alice.smith@example.com', 'password123', 1234567890, 'user', CURRENT_TIMESTAMP
+);
+
+
+INSERT INTO station_staff(
+    employee_id, first_name, last_name, password, role,station, approved_by, created_by
+) VALUES (
+    1, 'John', 'Doe', 'securepassword', 'station_master',"Colombo", NULL, NULL
+);
+
+
+INSERT INTO trackingDevice (
+    device_id, Longitude, Latitude, device_status, MAC_id, sim_num
+) VALUES (
+    1000, 12.345678, 98.765432, 'in_use', '00:1A:2B:3C:4D:5E', '89014101234567890'
+);
+
+
+INSERT INTO package (
+    package_id, tag_id, sender_id, receiver_id, type, package_condition, 
+    destination, price, tracking_device_id, submitted_by
+) VALUES (
+    'AAAA0000', '1', 1, 1, 'food', 'new', 
+    'Destination, City, Country', 100, 1, 1
+);
+Insert into station_staff (employee_id, first_name, last_name, station, password, role, approved_by) values (00000, 'admin', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 00000);
+
+-- admin password Admin@123

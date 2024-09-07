@@ -15,6 +15,7 @@ router.get('/hash',async (req, res, next)=>{
 })*/
 
 
+
 router.post('/login', async (req, res, next)=>{
 
     const connection = await getConnection();
@@ -152,7 +153,6 @@ router.get('/employees', async(req, res, next)=>{
 
     try{
         const result = await getEmployees(sql, parameters, connection);
-        console.log("dilan",result)
         if(result.length==0){
             res.status(200).json({Error: "Currently No Registered Users"})
             connection.release();
