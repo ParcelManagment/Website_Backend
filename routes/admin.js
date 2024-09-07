@@ -61,6 +61,7 @@ router.post('/login', async (req, res, next)=>{
 
 router.post('/createuser', async (req, res, next)=>{
       // database connection
+      console.log("comes in")
       const connection = await getConnection();
       if(!connection){
           console.log("Database connection unavailable")
@@ -69,12 +70,13 @@ router.post('/createuser', async (req, res, next)=>{
       }
   
         // extracting the submitted data
-      const {employee_id, fname, lname, station, role} = req.body
+      const {employee_id, fname, lname, station, role, requested_by} = req.body
       const password = employee_id;
       
-      
+      console.log(req.body)
   
       if(!employee_id || !fname || !lname || !station || !role){
+         
           res.status(400).json({Error: "Please submit all the required field"})
           return;
       }
@@ -125,6 +127,51 @@ router.post('/createuser', async (req, res, next)=>{
       }
 })
 
+router.get('/employees', async(req, res, next)=>{
+    const {role, station} = req.query;
+    console.log(role, station)
+
+    const connection = await getConnection();
+     if(!connection){
+         console.log("Database connection unavailable")
+         res.status(500).json({Error: "Database Error"})
+         return;
+     }
+     parameters = []
+     let sql = "SELECT employee_id, first_name, last_name, station, role, approved_by FROM station_staff WHERE 1=1";
+
+     if(role){
+        sql +=" AND role = ?";
+        parameters.push(role);
+     }
+     if(station){
+        sql += " AND station = ?";
+        parameters.push(station);
+    }
+
+
+    try{
+        const result = await getEmployees(sql, parameters, connection);
+        console.log("dilan",result)
+        if(result.length==0){
+            res.status(200).json({Error: "Currently No Registered Users"})
+            connection.release();
+            return;
+        }else{
+            res.status(200).json(result);
+            connection.release()
+        }
+
+    }catch(err){
+        res.status(500).json({Error: err, message: 'Failed to fetch data'})
+        connection.release();
+        return;
+    }
+
+
+
+
+})
 router.post('/createdevice', async(req,res,next)=>{
      // database connection
      const connection = await getConnection();
@@ -201,6 +248,7 @@ router.get('/alldevices', async(req,res,next)=>{
             return;
         }else{
             res.status(200).json(result);
+            connection.release()
         }
         
     }catch(err){
@@ -210,6 +258,7 @@ router.get('/alldevices', async(req,res,next)=>{
     }
     
 })
+
 
 async function findUser(employee_id, connection){
     try {
@@ -342,7 +391,15 @@ async function createDevice(mac_id,sim_num,connection){
     }
 
 }
-
+async function getEmployees(query, params, connection){
+    try {
+        [rows] = await connection.query(query,params);
+        return rows;
+    }catch(err){
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+}
 async function allDevices( connection){
   
     try {
