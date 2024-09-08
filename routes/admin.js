@@ -28,7 +28,7 @@ router.post('/login', async (req, res, next)=>{
     const data = req.body;
     const employee_id = data.employee_id;
     const password = data.password;
-
+    console.log(employee_id, password)
     // check empty fields
     if (!employee_id || !password) {
         res.status(400).json({ Error: "Empty Fields. Please Try Again" });
@@ -62,7 +62,6 @@ router.post('/login', async (req, res, next)=>{
 
 router.post('/createuser', async (req, res, next)=>{
       // database connection
-      console.log("comes in")
       const connection = await getConnection();
       if(!connection){
           console.log("Database connection unavailable")
