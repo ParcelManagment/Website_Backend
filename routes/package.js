@@ -149,85 +149,89 @@ router.get('/tracking', async (req, res) => {
     }
   });
 
-// Route for deleting a package by ID
-router.delete('/deletepackage/:id', async (req, res) => {
+router.delete("/deletepackage/:id", async (req, res) => {
     const packageId = req.params.id;
-    const con = getConnection();
 
     try {
-        con.beginTransaction(async (err) => {
-            if (err) {
-                console.error('Transaction Error:', err);
-                res.status(500).json({ Error: "Database Transaction Error" });
-                return;
+        const transaction = await sequelize.transaction();
+        
+        try{
+            const packageUpdateResult = await Package.update(
+                {cancelled: true},
+                {where: {package_id: packageId}, transaction}
+            );
+
+            //check if package exist
+            if (packageUpdateResult[0] === 0){
+                throw new error("Package not found");
             }
 
-            con.query('DELETE FROM trackingdevice WHERE package_id = ?', [packageId], (err) => {
-                if (err) {
-                    console.error('Error deleting from trackingdevice:', err);
-                    return con.rollback(() => {
-                        res.status(500).json({ Error: "Error deleting tracking data" });
-                    });
-                }
+            //commit transaction if the update is successfull
+            await transaction.commit();
 
-                con.query('DELETE FROM package WHERE package_id = ?', [packageId], (err) => {
-                    if (err) {
-                        console.error('Error deleting package:', err);
-                        return con.rollback(() => {
-                            res.status(500).json({ Error: "Error deleting package" });
-                        });
-                    }
+            //send success response
+            res.status(200).json({message: "Package cancelled successfully"});
 
-                    con.commit((err) => {
-                        if (err) {
-                            console.error('Error committing transaction:', err);
-                            return con.rollback(() => {
-                                res.status(500).json({ Error: "Transaction Commit Error" });
-                            });
-                        }
-                        res.status(200).json({ message: 'Package and associated data deleted successfully' });
-                    });
-                });
-            });
-        });
-    } catch (error) {
-        console.error('Unexpected Error deleting package:', error);
-        res.status(500).json({ message: 'Unexpected Database Error', error });
+        }
+
+        catch(error){
+            //Rollback the transaction when error occurred
+            await transaction.rollback();
+            console.error("Error during deletion:",error);
+            res.status(500).json({message: "Error during deletion:",error});
+        }
+    }
+    catch(error) {
+        //Handle unexpected errors (ex: errors starting the transaction)
+        console.error("Unexpected error:",error);
+        res.status(500).json({message: 'Unexpected database error', error});
     }
 });
 
 // Route for editing user by package receiver ID
-router.put('/edituser/:id', async (req, res) => {
-    const packageId = req.params.id;
+router.put('/edituser/:id', async(req, res)=> {
+    const userId = req.params.id;
     const { receiver_first_name, receiver_last_name, receiver_email, receiver_mobile_number } = req.body;
-  
+
     let updates = {};
-  
+
+    //Collect updates if provided in request body
     if (receiver_first_name) updates.first_name = receiver_first_name;
     if (receiver_last_name) updates.last_name = receiver_last_name;
     if (receiver_email) updates.email = receiver_email;
     if (receiver_mobile_number) updates.mobile_number = receiver_mobile_number;
-  
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ message: "Provide at least one field to update." });
+
+    //Check if any updates are provided
+    if (Object.keys(updates).length === 0){
+        return res.status(400).json({ message: "Provide at least one field to update"});
+
     }
-  
+
     try {
-      // Find the receiver's user ID from the package
-      const packageData = await Package.findOne({ where: { package_id: packageId } });
-  
-      if (!packageData) {
-        return res.status(404).json({ message: "Package not found." });
-      }
-  
-      // Update the user's details
-      await User.update(updates, { where: { id: packageData.receiver_id } });
-  
-      res.status(200).json({ message: "Receiver updated successfully" });
-    } catch (err) {
-      console.error("Error updating user:", err);
-      res.status(500).json({ message: "Database error", error: err });
+        //Fetch the user by the provided user ID from the url
+        const user = await User.findOne({ where: { id: userId }});
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found"});
+        }
+
+        //Check if the user is not registered
+        if (user.role !== 'user_nr') {
+            return res.status(403).json({ message: "Cannot update details for registered users."});
+
+        }
+
+        await User.update(updates, { where: { id: user.id }});
+
+        res.status(200).json({ message: "User details updated successfully"});
     }
-  });
+
+    catch (err) {
+        console.error("Error updating user:", err);
+        res.status(500).json({ message: "Database error", error: err});
+    }
+
+    
+});
 
 module.exports = router;
