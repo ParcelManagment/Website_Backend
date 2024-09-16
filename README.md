@@ -84,7 +84,7 @@ JWT_SECRET=Your secret
 ### Admin
 
 - **GET /api/admin/stats**: Get system statistics and analytics.
-- **POST /api/admin/approve/:id**: Approve a pending request.
+- **POST /api/admin/create**: create new staff member.
 - **GET /api/admin/users**: List all users.
 - **GET /api/admin/staff**: List all staff members.
 

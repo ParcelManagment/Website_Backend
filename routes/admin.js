@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { getConnection } = require('../database/database');
+const { isAdmin } = require('../util/auth/staffAuth');
 
 // to create hash password for admin registration
 // always keep as commented
@@ -48,8 +49,8 @@ router.post('/login', async (req, res, next)=>{
             return;
         }
 
-        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h'});
-        res.cookie('token', token, { httpOnly: true});
+        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '3h'});
+        res.cookie('token', token, {httpOnly: true })
         res.status(200).json({ Error: null, message: "Login Successful" });
 
     } catch (err) {
@@ -60,7 +61,7 @@ router.post('/login', async (req, res, next)=>{
     }
 })
 
-router.post('/createuser', async (req, res, next)=>{
+router.post('/createuser', isAdmin, async (req, res, next)=>{
       // database connection
       const connection = await getConnection();
       if(!connection){
@@ -70,8 +71,9 @@ router.post('/createuser', async (req, res, next)=>{
       }
   
         // extracting the submitted data
-      const {employee_id, fname, lname, station, role, requested_by} = req.body
+      const {employee_id, fname, lname, station, role} = req.body
       const password = employee_id;
+      const created_by = req.staff_id;
       
       console.log(req.body)
   
@@ -108,9 +110,7 @@ router.post('/createuser', async (req, res, next)=>{
           const hash = await hashPassword(password)
   
           // SAVE DATA IN DATABSE
-          const token = jwt.sign({fname: fname, lname: lname,  employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
-          const result = await savaUserCredientials(employee_id, fname, lname, hash, station,role, connection)
-          res.cookie('token',token,{httpOnly: true}) // set cookie
+          const result = await savaUserCredientials(employee_id, fname, lname, hash, station,role,created_by, connection)
           res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
           })
   
@@ -129,7 +129,6 @@ router.post('/createuser', async (req, res, next)=>{
 
 router.get('/employees', async(req, res, next)=>{
     const {role, station} = req.query;
-    console.log(role, station)
 
     const connection = await getConnection();
      if(!connection){
@@ -138,7 +137,7 @@ router.get('/employees', async(req, res, next)=>{
          return;
      }
      parameters = []
-     let sql = "SELECT employee_id, first_name, last_name, station, role, approved_by FROM station_staff WHERE 1=1";
+     let sql = "SELECT employee_id, first_name, last_name, station, role, created_by, DATE_FORMAT(created_at, '%d-%b-%Y') as created_at FROM station_staff WHERE 1=1";
 
      if(role){
         sql +=" AND role = ?";
@@ -171,7 +170,7 @@ router.get('/employees', async(req, res, next)=>{
 
 
 })
-router.post('/createdevice', async(req,res,next)=>{
+router.post('/createdevice',isAdmin, async(req,res,next)=>{
      // database connection
      const connection = await getConnection();
      if(!connection){
@@ -180,9 +179,10 @@ router.post('/createdevice', async(req,res,next)=>{
          return;
      }
        // extracting the submitted data
-    const {mac_id, sim_num} = req.body;
-     
-    if(!mac_id || !sim_num){
+    const {mac_id, iccid, status} = req.body;
+    const staff_id = req.staff_id
+     console.log(req.body)
+    if(!mac_id || !iccid || !status){
         res.status(400).json({Error: "Please submit all the required field"})
         return;
     }
@@ -213,7 +213,7 @@ router.post('/createdevice', async(req,res,next)=>{
     */
     try{
         
-        const result = await createDevice(mac_id,sim_num, connection)
+        const result = await createDevice(mac_id,iccid, staff_id, status, connection)
         res.status(201).json({Error: null, message: 'Registration Successfull', device_id: result.insertId})
 
     }catch(err){
@@ -230,7 +230,7 @@ router.post('/createdevice', async(req,res,next)=>{
 
 })
 
-router.get('/alldevices', async(req,res,next)=>{
+router.get('/alldevices',isAdmin, async(req,res,next)=>{
    
     const connection = await getConnection();
     if(!connection){
@@ -337,11 +337,11 @@ function validate(employee_id, fname, lname, password, station, role){
 }
 
 // save user details in the database
-async function savaUserCredientials(employee_id,fname, lname, hashPassword, station,role, connection){
+async function savaUserCredientials(employee_id,fname, lname, hashPassword, station,role,created_by, connection){
     
     try {
-        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password, station, role) VALUES (?, ?, ?, ?, ?, ?)';
-        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword, station, role]);
+        const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password, station, role, created_by) VALUES (?,?, ?, ?, ?, ?, ?)';
+        const [result] = await connection.query(query, [employee_id, fname, lname, hashPassword, station, role, created_by]);
         return result;
     } catch (err) {
         console.error("Database operation failed:", err);
@@ -378,11 +378,11 @@ async function hashPassword(password){
     return hash;
 }
 
-async function createDevice(mac_id,sim_num,connection){
+async function createDevice(mac_id, iccid, staff_id, status, connection){
     
     try {
-        const query = 'INSERT INTO trackingDevice (MAC_id, sim_num) VALUES (?, ?)';
-        const [result] = await connection.query(query, [mac_id,sim_num]);
+        const query = 'INSERT INTO trackingDevice (MAC_id, iccid, installed_by, device_status) VALUES (?, ?, ?, ?)';
+        const [result] = await connection.query(query, [mac_id, iccid, staff_id, status]);
         return result;
     } catch (err) {
         console.error("Database operation failed:", err);
@@ -400,9 +400,11 @@ async function getEmployees(query, params, connection){
     }
 }
 async function allDevices( connection){
-  
+   
     try {
-        const [rows] = await connection.query('SELECT * FROM trackingDevice');
+        const [rows] = await connection.query(
+            "SELECT device_id, device_status, DATE_FORMAT(Last_update,'%d-%b-%Y %H:%i:%s') AS Last_update, MAC_id, iccid,DATE_FORMAT(installation, '%d-%b-%Y') AS installation,  installed_by FROM trackingDevice"
+            );
         return rows;
     } catch (err) {
         console.error("Database operation failed:", err);

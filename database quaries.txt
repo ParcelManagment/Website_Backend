@@ -33,8 +33,9 @@ CREATE TABLE trackingDevice (
   device_status ENUM('in_use', 'not_in_use') DEFAULT 'in_use' NOT NULL,
   Last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   MAC_id VARCHAR(20) UNIQUE NOT NULL,
-  born_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  sim_num VARCHAR(20) UNIQUE NOT NULL 
+  iccid VARCHAR(20) UNIQUE NOT NULL,
+  installation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  installed_by INT NOT NULL 
 );
 
 CREATE TABLE package (
@@ -108,6 +109,18 @@ INSERT INTO package (
     'AAAA0000', '1', 1, 1, 'food', 'new', 
     'Destination, City, Country', 100, 1, 1
 );
-Insert into station_staff (employee_id, first_name, last_name, station, password, role, approved_by) values (00000, 'admin', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 00000);
+Insert into station_staff (employee_id, first_name, last_name, station, password, role, created_by) values (10001, 'admin', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 10001);
+
+INSERT INTO trackingDevice (Longitude, Latitude, device_status, MAC_id, iccid, installed_by)
+VALUES
+  (80.2345, 7.5678, 'in_use', 'AB:CD:EF:01:23:45', '89012345678901234571', 2),
+  (79.8765, 6.7890, 'not_in_use', '56:78:90:12:34:56', '89012345678901234572', 3),
+  (80.5432, 7.6789, 'in_use', '98:76:54:32:10:FF', '89012345678901234573', 1),
+  (79.6543, 6.8901, 'in_use', '00:11:22:33:44:55', '89012345678901234574', 4),
+  (80.3456, 7.8902, 'not_in_use', '66:77:88:99:AA:BB', '89012345678901234575', 2),
+  (79.4321, 6.5432, 'in_use', 'CC:DD:EE:FF:00:11', '89012345678901234576', 3),
+  (80.8765, 7.1234, 'not_in_use', '22:33:44:55:66:77', '89012345678901234577', 1),
+  (79.3210, 6.8765, 'in_use', '44:55:66:77:88:99', '89012345678901234578', 4);
+
 
 -- admin password Admin@123
