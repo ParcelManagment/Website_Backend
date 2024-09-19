@@ -97,16 +97,21 @@ router.get('/fetchbyid/:id', async (req, res) => {
     const fetchid = req.params.id;
     
     try {
-        // Fetch package details, including sender_id and receiver_id
+        // Fetch package details, including sender_id, receiver_id, and cancelled status
         const packageResult = await Package.findOne({
             where: { package_id: fetchid },
-            attributes: ['type', 'package_condition', 'destination', 'sender_id', 'receiver_id']  // Include sender_id and receiver_id
+            attributes: ['type', 'package_condition', 'destination', 'sender_id', 'receiver_id', 'cancelled']  // Include cancelled status
         });
         
         if (!packageResult) {
             return res.status(404).json({ message: 'Package not found' });
         }
-  
+
+        // Check if the package is cancelled
+        if (packageResult.cancelled) {
+            return res.status(400).json({ message: 'This package has been cancelled and cannot be viewed.' });
+        }
+
         // Fetch sender details
         const senderResult = await User.findOne({
             where: { id: packageResult.sender_id },
@@ -131,62 +136,67 @@ router.get('/fetchbyid/:id', async (req, res) => {
         console.error('Error fetching package details:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
-  });
+});
+
   
 
 
-// Route for tracking
-router.get('/tracking', async (req, res) => {
-    try {
-      // Fetch all tracking devices
-      const trackingDevices = await TrackingDevice.findAll();
-  
-      // Send the result as the response
-      res.status(200).json(trackingDevices);
-    } catch (err) {
-      console.error('Error fetching tracking devices:', err);
-      res.status(500).json({ message: 'Error fetching tracking devices', error: err });
-    }
-  });
-
-router.delete("/deletepackage/:id", async (req, res) => {
+//route to cancel a package
+  router.delete("/deletepackage/:id", async (req, res) => {
     const packageId = req.params.id;
 
     try {
+        // Start a transaction
         const transaction = await sequelize.transaction();
-        
-        try{
-            const packageUpdateResult = await Package.update(
-                {cancelled: true},
-                {where: {package_id: packageId}, transaction}
-            );
 
-            //check if package exist
-            if (packageUpdateResult[0] === 0){
-                throw new error("Package not found");
+        try {
+            // Fetch the package to check its current status
+            const packageData = await Package.findOne({
+                where: { package_id: packageId },
+                transaction
+            });
+
+            // Check if package exists
+            if (!packageData) {
+                throw new Error("Package not found");
             }
 
-            //commit transaction if the update is successfull
+            // Check if the package is already cancelled
+            if (packageData.cancelled) {
+                throw new Error("Package is already cancelled");
+            }
+
+            // Update the package to mark it as cancelled
+            const packageUpdateResult = await Package.update(
+                { cancelled: true },
+                { where: { package_id: packageId }, transaction }
+            );
+
+            // Commit the transaction if the update is successful
             await transaction.commit();
 
-            //send success response
-            res.status(200).json({message: "Package cancelled successfully"});
-
-        }
-
-        catch(error){
-            //Rollback the transaction when error occurred
+            // Send success response
+            res.status(200).json({ message: "Package cancelled successfully" });
+        } catch (error) {
+            // Rollback the transaction in case of an error
             await transaction.rollback();
-            console.error("Error during deletion:",error);
-            res.status(500).json({message: "Error during deletion:",error});
+
+            // Check if the error is related to package being already cancelled
+            if (error.message === "Package is already cancelled") {
+                return res.status(400).json({ message: "Package is already cancelled" });
+            }
+
+            // Handle other errors
+            console.error("Error during deletion:", error);
+            res.status(500).json({ message: "Error during deletion", error });
         }
-    }
-    catch(error) {
-        //Handle unexpected errors (ex: errors starting the transaction)
-        console.error("Unexpected error:",error);
-        res.status(500).json({message: 'Unexpected database error', error});
+    } catch (error) {
+        // Handle unexpected errors (e.g., errors starting the transaction)
+        console.error("Unexpected error:", error);
+        res.status(500).json({ message: 'Unexpected database error', error });
     }
 });
+
 
 // Route for editing user by package receiver ID
 router.put('/edituser/:id', async(req, res)=> {
