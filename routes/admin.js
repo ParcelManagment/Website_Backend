@@ -62,81 +62,77 @@ router.post('/login', async (req, res, next)=>{
 })
 
 router.post('/createuser', isAdmin, async (req, res, next)=>{
-      // database connection
-      const connection = await getConnection();
-      if(!connection){
-          console.log("Database connection unavailable")
-          res.status(500).json({Error: "Database Error"})
-          return;
-      }
-  
-        // extracting the submitted data
-      const {employee_id, fname, lname, station, role} = req.body
-      const password = employee_id;
-      const created_by = req.staff_id;
+
+    // extracting the submitted data
+    const {employee_id, fname, lname, station, role} = req.body
+    const password = employee_id;
+    const created_by = req.staff_id;
+        
+    if(!employee_id || !fname || !lname || !station || !role){
+        res.status(400).json({Error: "Please submit all the required field"})
+        return;
+    }
+        
+    // database connection
+    const connection = await getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
       
-      console.log(req.body)
-  
-      if(!employee_id || !fname || !lname || !station || !role){
-         
-          res.status(400).json({Error: "Please submit all the required field"})
-          return;
-      }
-      
-      // checking the user email is already registered
-      try{
-          const result = await registered(employee_id, connection);
-          if(result.length>0){
-              res.status(409).json({Error: "User has already registered"})
-              connection.release();
-              return;
-          }
-          
-      }catch(err){
-          res.status(500).json({Error: err, message: 'Registration Failed'})
-          connection.release();
-          return;
-      }
-      
-      // validate the user inputs
-      const validationError = validate(employee_id, fname, lname,password, station, role);
-      if(validationError){
-          res.status(400).json({Error: validationError})
-          connection.release();
-          return;
-      }
-      
-      try{
-          const hash = await hashPassword(password)
-  
-          // SAVE DATA IN DATABSE
-          const result = await savaUserCredientials(employee_id, fname, lname, hash, station,role,created_by, connection)
-          res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
-          })
-  
-      }catch(err){
-          try{
-          console.log("registration error occured", err);  // developing//////////////////////////////////////////////////
-          res.status(500).json({Error: "Registration Failed"})
-          }catch(error){
-              console.log('error occured while responding to the client')
-          }
-  
-      }finally{
-          connection.release();
-      }
+    // checking the user email is already registered
+    try{
+        const result = await registered(employee_id, connection);
+        if(result.length>0){
+            res.status(409).json({Error: "User has already registered"})
+            return;
+        }
+    }catch(err){
+        res.status(500).json({Error: err, message: 'Registration Failed'})
+        return;
+    }finally{
+        connection.release();
+    }
+    
+    // validate the user inputs
+    const validationError = validate(employee_id, fname, lname,password, station, role);
+    if(validationError){
+        res.status(400).json({Error: validationError})
+        connection.release();
+        return;
+    }
+    
+    try{
+        const hash = await hashPassword(password)
+        // SAVE DATA IN DATABSE
+        const result = await savaUserCredientials(employee_id, fname, lname, hash, station,role,created_by, connection)
+        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
+        })
+
+    }catch(err){
+        try{
+        console.log("registration error occured", err);  // developing//////////////////////////////////////////////////
+        res.status(500).json({Error: "Registration Failed"})
+        }catch(error){
+            console.log('error occured while responding to the client')
+        }
+
+    }finally{
+        connection.release();
+    }
 })
 
 router.get('/employees', async(req, res, next)=>{
-    const {role, station} = req.query;
 
+    const {role, station, search_term} = req.query;
     const connection = await getConnection();
      if(!connection){
          console.log("Database connection unavailable")
          res.status(500).json({Error: "Database Error"})
          return;
      }
-     parameters = []
+     let parameters = []
      let sql = "SELECT employee_id, first_name, last_name, station, role, created_by, DATE_FORMAT(created_at, '%d-%b-%Y') as created_at FROM station_staff WHERE 1=1";
 
      if(role){
@@ -144,75 +140,100 @@ router.get('/employees', async(req, res, next)=>{
         parameters.push(role);
      }
      if(station){
+
         sql += " AND station = ?";
         parameters.push(station);
     }
+    if(search_term){
+        sql += " AND (employee_id LIKE ? OR first_name LIKE ? OR last_name LIKE ?)"
+        parameters.push(`${search_term}%`)
+        parameters.push(`${search_term}%`)
+        parameters.push(`${search_term}%`)
+    }   
 
 
     try{
         const result = await getEmployees(sql, parameters, connection);
         if(result.length==0){
             res.status(200).json({Error: "Currently No Registered Users"})
-            connection.release();
             return;
         }else{
             res.status(200).json(result);
-            connection.release()
         }
 
     }catch(err){
         res.status(500).json({Error: err, message: 'Failed to fetch data'})
-        connection.release();
         return;
+    }finally{
+        connection.release();
     }
-
-
-
-
 })
-router.post('/createdevice',isAdmin, async(req,res,next)=>{
-     // database connection
-     const connection = await getConnection();
+router.get('/promote',async(req, res, next)=>{
+
+    const {employee_id} = req.query; 
+
+    const connection = await getConnection();
      if(!connection){
          console.log("Database connection unavailable")
          res.status(500).json({Error: "Database Error"})
          return;
      }
-       // extracting the submitted data
+     try{
+         const result = await promote(employee_id, connection)  
+         if(result.affectedRows==1){
+            if(result.changedRows==1){
+                res.status(200).json({message:"role Updated"})
+            }else{
+                res.status(200).json({message:"role Already Updated"})
+            }
+         }else{
+            res.status(404).json({Error:"Employee not found"})
+         }
+     }catch(err){
+        res.status(500).json({Error: "Error Promoting the User"})
+     }
+
+    
+})
+router.post('/createdevice',isAdmin, async(req,res,next)=>{
+    // extracting the submitted data
     const {mac_id, iccid, status} = req.body;
     const staff_id = req.staff_id
-     console.log(req.body)
+    console.log(req.body)
     if(!mac_id || !iccid || !status){
         res.status(400).json({Error: "Please submit all the required field"})
         return;
     }
-
-
+    
+    // database connection
+    const connection = await getConnection();
+        if(!connection){
+            console.log("Database connection unavailable")
+            res.status(500).json({Error: "Database Error"})
+            return;
+        }
+        
      try{
         const result = await findDevice(mac_id, connection);
         if(result.length>0){
             res.status(409).json({Error: "Device has already registered"})
-            connection.release();
+            return;
+        }
+        const result2 = await findIccId(iccid, connection);
+        if(result2.length>0){
+            res.status(409).json({Error: "SIM Card has already registered"})
             return;
         }
         
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
-        connection.release();
         return;
-    }
-       // 0--------->>>>>>>>>>>>>>>>>> importatnt <<<<<<<<<<<<<<<<<<<<<------------0
-    // validate device attributes
-   // const validationError = validate(mac_id, sim_num);    /// need to be implemented
-   // !!!!!#####%%%^^^^^^^^^ importatnt ^^^^^^%%%#####!!!!!!!
-   /* if(validationError){
-        res.status(400).json({Error: validationError})
+    }finally{
         connection.release();
-        return;
     }
-    */
+     
+
     try{
-        
         const result = await createDevice(mac_id,iccid, staff_id, status, connection)
         res.status(201).json({Error: null, message: 'Registration Successfull', device_id: result.insertId})
 
@@ -229,31 +250,65 @@ router.post('/createdevice',isAdmin, async(req,res,next)=>{
     }
 
 })
+router.get('/lastdevice', async (req, res, next)=>{
 
-router.get('/alldevices',isAdmin, async(req,res,next)=>{
-   
     const connection = await getConnection();
     if(!connection){
         console.log("Database connection unavailable")
         res.status(500).json({Error: "Database Error"})
+        connection.release()
         return;
     }
-
+  
     try{
-        const result = await allDevices(connection);
+        const result = await getLastDevice(connection)
+        connection.release()
+        res.status(200).json(result);
+        return
+    }catch(err){
+        res.status(500).json({Error: "loading failed last added device details !"}) 
+        connection.release()
+    }
+
+  
+})
+
+router.get('/alldevices',isAdmin, async(req,res,next)=>{
+
+    const {status, search_term} = req.query;
+    let parameters =[]
+    const connection = await getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        connection.release()
+        return;
+    }
+    let sql = "SELECT device_id, device_status, DATE_FORMAT(Last_update,'%d-%b-%Y %H:%i:%s') AS Last_update, MAC_id, iccid,DATE_FORMAT(installation, '%d-%b-%Y') AS installation,  installed_by FROM trackingDevice WHERE 1=1"
+   
+    if(status){
+        sql += " AND device_status = ?"
+        parameters.push(status)
+    }
+    if(search_term){
+        sql += " AND (iccid LIKE ? OR MAC_id LIKE ?)"
+        parameters.push(`${search_term}%`)
+        parameters.push(`${search_term}%`)
+    }
+    try{
+        const result = await allDevices(sql, parameters, connection);
         if(result.length==0){
             res.status(200).json({Error: "Zero devices"})
-            connection.release();
             return;
         }else{
             res.status(200).json(result);
-            connection.release()
         }
         
     }catch(err){
-        res.status(500).json({Error: err, message: 'Failed to fetch data'})
-        connection.release();
+        res.status(500).json({Error:'Failed to fetch data'})
         return;
+    }finally{
+        connection.release();
     }
     
 })
@@ -372,6 +427,17 @@ async function findDevice(mac_id, connection){
     }
 };
 
+async function findIccId(iccid, connection){
+  
+    try {
+        const [rows] = await connection.query('SELECT * FROM trackingDevice WHERE iccid = ?', [iccid]);
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+};
+
 async function hashPassword(password){
     const saltRound = 10;
     const hash = await bcrypt.hash(password,saltRound);
@@ -390,6 +456,15 @@ async function createDevice(mac_id, iccid, staff_id, status, connection){
     }
 
 }
+async function getLastDevice(connection){
+    try {
+        const [rows] = await connection.query("SELECT device_id , device_status, MAC_id, iccid, DATE_FORMAT(installation, '%d-%b-%Y %H:%i:%s') as installation ,installed_by FROM trackingDevice  ORDER BY device_id DESC LIMIT 1");
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }  
+}
 async function getEmployees(query, params, connection){
     try {
         [rows] = await connection.query(query,params);
@@ -399,12 +474,21 @@ async function getEmployees(query, params, connection){
         throw new Error("Server Error");
     }
 }
-async function allDevices( connection){
+async function promote(id,connection){
+    
+    try {
+        const [rows] = await connection.query("UPDATE station_staff SET role = 'station_master' WHERE employee_id = ?",
+        [id]);
+        return rows;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }  
+}
+async function allDevices(query, params, connection){
    
     try {
-        const [rows] = await connection.query(
-            "SELECT device_id, device_status, DATE_FORMAT(Last_update,'%d-%b-%Y %H:%i:%s') AS Last_update, MAC_id, iccid,DATE_FORMAT(installation, '%d-%b-%Y') AS installation,  installed_by FROM trackingDevice"
-            );
+        const [rows] = await connection.query(query, params);
         return rows;
     } catch (err) {
         console.error("Database operation failed:", err);

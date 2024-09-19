@@ -41,14 +41,15 @@ CREATE TABLE trackingDevice (
 CREATE TABLE package (
   id INTEGER PRIMARY KEY AUTO_INCREMENT,
   package_id CHAR(8) UNIQUE NOT NULL,
-  tag_id VARCHAR(255) UNIQUE DEFAULT NULL,
+  tag_id VARCHAR(255) NOT NULL,
   sender_id INTEGER NOT NULL,
   receiver_id INTEGER NOT NULL,
   type ENUM("vehicle", "furniture", "food", "grocery", "chemical", "other") NOT NULL,
   package_condition ENUM('new', 'used') NOT NULL,
+  departure VARCHAR(255) NOT NULL,
   destination VARCHAR(255) NOT NULL,
   price INTEGER NOT NULL,
-  tracking_device_id INTEGER,
+  tracking_device_id INTEGER DEFAULT NULL,
   submitted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP NOT NULL,
   out_for_delivery TIMESTAMP,
   arrived TIMESTAMP,
@@ -96,18 +97,18 @@ INSERT INTO station_staff(
 
 
 INSERT INTO trackingDevice (
-    device_id, Longitude, Latitude, device_status, MAC_id, sim_num
+    device_id, Longitude, Latitude, device_status, MAC_id, iccid, installed_by
 ) VALUES (
-    1000, 12.345678, 98.765432, 'in_use', '00:1A:2B:3C:4D:5E', '89014101234567890'
+    1000, 12.345678, 98.765432, 'in_use', '00:1A:2B:3C:4D:5E', '89014101234567890', 10001
 );
 
 
 INSERT INTO package (
     package_id, tag_id, sender_id, receiver_id, type, package_condition, 
-    destination, price, tracking_device_id, submitted_by
+    destination, departure, price, tracking_device_id, submitted_by
 ) VALUES (
     'AAAA0000', '1', 1, 1, 'food', 'new', 
-    'Destination, City, Country', 100, 1, 1
+    'Colombo',"Matara", 100, 1, 1
 );
 Insert into station_staff (employee_id, first_name, last_name, station, password, role, created_by) values (10001, 'admin', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 10001);
 

@@ -30,15 +30,16 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
         const sender = req.body.sender;
         const receiver = req.body.receiver;
         const emp_id = req.staff_id;
+        const departure = req.station;
 
         const newPackage = await Package.create({
             tag_id: packageData.tag_id,
             package_id: newID,
             type: packageData.type,
             package_condition: packageData.package_condition,
+            departure: departure,
             destination: packageData.destination,
             price: packageData.price,
-            tracking_device_id: packageData.tracking_device_id,
             sender_id: sender.sender_id,
             sender_type: sender.sender_type,
             receiver_id: receiver.receiver_id,

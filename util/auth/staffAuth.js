@@ -13,6 +13,7 @@ const isStaff = (req, res, next) => {
         const payload = authoByRoles(token, ["station_master","general_staff"]);
         req.staff_id = payload.employee_id;
         req.staff_role = payload.role;
+        req.station = payload.station;
         next()
 
     }catch(error){
@@ -32,6 +33,7 @@ const isStationMaster = (req, res, next)=>{
     const payload = authoByRoles(token, ["station_master"]);
         req.staff_id = payload.employee_id;
         req.staff_role = payload.role;
+        req.station = payload.station;
         next()
 
     }catch(error){
@@ -51,6 +53,7 @@ const isStationMaster = (req, res, next)=>{
         const payload = authoByRoles(token, ["admin"]);
             req.staff_id = payload.employee_id;
             req.staff_role = payload.role;
+            req.station = payload.station;
             next()
     
         }catch(error){

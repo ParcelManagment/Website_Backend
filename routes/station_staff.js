@@ -115,7 +115,7 @@ router.post('/login', async (req, res, next) => {
             return;
         }
 
-        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h'});
+        const token = jwt.sign({ employee_id: user.employee_id, role: user.role, station:user.station}, process.env.JWT_SECRET, { expiresIn: '1h'});
         res.cookie('token', token, { httpOnly: true});
         res.status(200).json({ Error: null, message: "Login Successful" });
 
