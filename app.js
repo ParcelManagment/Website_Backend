@@ -6,6 +6,7 @@ const staff = require('./routes/station_staff.js');
 const packageRouter = require('./routes/package.js');
 const message = require('./routes/message.js');
 const deviceIds = require("./routes/deviceIds.js");
+const summary = require("./routes/summary.js")
 const admin = require("./routes/admin.js");
 const cookieParser = require('cookie-parser');
 const sequelize = require("./database/connectSequelize.js");
@@ -28,6 +29,7 @@ app.use(express.json())
 app.use(cookieParser())
 
 app.use('/admin', admin);  // admin routes for employee iot device management
+app.use('/summary', summary) // summery for admin dashbord (complex queries with data summary)
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
