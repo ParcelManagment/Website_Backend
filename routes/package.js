@@ -230,7 +230,15 @@ router.put('/edituser/:id', async(req, res)=> {
             return res.status(403).json({ message: "Cannot update details for registered users."});
 
         }
+        //Check wheather the email already exists
+        if (receiver_email){
+            const existingEmailUser = await User.findOne({where: {email: receiver_email}});
+            if (existingEmailUser && existingEmailUser.id !== userId){
+                return res.status(400).json({message: "This email already exists"});
+            }
+        }
 
+        //Update user details
         await User.update(updates, { where: { id: user.id }});
 
         res.status(200).json({ message: "User details updated successfully"});
