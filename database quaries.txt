@@ -1,3 +1,4 @@
+DROP DATABASE parcel;
 CREATE DATABASE parcel; 
 use parcel;
 CREATE TABLE user (
@@ -170,3 +171,54 @@ INSERT INTO package (
 ('AAAA0031', 'TAG0031', 3, 1, 'chemical', 'new', 'Matara', 'Kurunegala', 80, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
 ('AAAA0032', 'TAG0032', 1, 3, 'vehicle', 'used', 'Puttalam', 'Vavuniya', 200, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003)
 
+-- user data 
+-- Insert sample users
+INSERT INTO user (first_name, last_name, email, password, mobile_number, role) VALUES
+('John', 'Doe', 'john.doe@example.com', 'password123', 1234567890, 'user'),
+('Jane', 'Smith', 'jane.smith@example.com', NULL, 1234567891, 'user_nr'),
+('Alice', 'Johnson', 'alice.johnson@example.com', 'password789', 1234567892, 'user'),
+('Bob', 'Brown', 'bob.brown@example.com', NULL, 1234567893, 'user_nr'),
+('Charlie', 'Davis', 'charlie.davis@example.com', 'password112', 1234567894, 'user'),
+('Diana', 'Evans', 'diana.evans@example.com', NULL, 1234567895, 'user_nr'),
+('Ethan', 'Clark', 'ethan.clark@example.com', 'password415', 1234567896, 'user'),
+('Fiona', 'Martinez', 'fiona.martinez@example.com', NULL, 1234567897, 'user_nr'),
+('George', 'Lopez', 'george.lopez@example.com', 'password718', 1234567898, 'user'),
+('Hannah', 'Walker', 'hannah.walker@example.com', NULL, 1234567899, 'user_nr'),
+('Ivy', 'Hall', 'ivy.hall@example.com', 'password000', 1234567800, 'user'),
+('Jack', 'Allen', 'jack.allen@example.com', NULL, 1234567801, 'user_nr'),
+('Kelly', 'Young', 'kelly.young@example.com', 'password567', 1234567802, 'user'),
+('Leo', 'King', 'leo.king@example.com', NULL, 1234567803, 'user_nr'),
+('Mia', 'Wright', 'mia.wright@example.com', 'password321', 1234567804, 'user'),
+('Noah', 'Scott', 'noah.scott@example.com', NULL, 1234567805, 'user_nr'),
+('Olivia', 'Green', 'olivia.green@example.com', 'password987', 1234567806, 'user'),
+('Paul', 'Adams', 'paul.adams@example.com', NULL, 1234567807, 'user_nr'),
+('Quinn', 'Baker', 'quinn.baker@example.com', 'password876', 1234567808, 'user'),
+('Rachel', 'Gonzalez', 'rachel.gonzalez@example.com', NULL, 1234567809, 'user_nr'),
+('Sam', 'Nelson', 'sam.nelson@example.com', 'password666', 1234567810, 'user'),
+('Tina', 'Carter', 'tina.carter@example.com', NULL, 1234567811, 'user_nr'),
+('Uma', 'Mitchell', 'uma.mitchell@example.com', 'password888', 1234567812, 'user'),
+('Vera', 'Perez', 'vera.perez@example.com', NULL, 1234567813, 'user_nr'),
+('Will', 'Roberts', 'will.roberts@example.com', 'password1011', 1234567814, 'user'),
+('Xena', 'Turner', 'xena.turner@example.com', NULL, 1234567815, 'user_nr'),
+('Yara', 'Phillips', 'yara.phillips@example.com', 'password1415', 1234567816, 'user'),
+('Zane', 'Campbell', 'zane.campbell@example.com', NULL, 1234567817, 'user_nr'),
+('Aaron', 'Parker', 'aaron.parker@example.com', 'password1819', 1234567818, 'user'),
+('Bella', 'Evans', 'bella.evans@example.com', NULL, 1234567819, 'user_nr'),
+('Cody', 'Edwards', 'cody.edwards@example.com', 'password2223', 1234567820, 'user'),
+('Daisy', 'Stewart', 'daisy.stewart@example.com', NULL, 1234567821, 'user_nr'),
+('Eli', 'Sanchez', 'eli.sanchez@example.com', 'password2627', 1234567822, 'user'),
+('Faith', 'Morris', 'faith.morris@example.com', NULL, 1234567823, 'user_nr'),
+('Gabe', 'Rogers', 'gabe.rogers@example.com', 'password3031', 1234567824, 'user'),
+('Holly', 'Reed', 'holly.reed@example.com', NULL, 1234567825, 'user_nr'),
+('Isaac', 'Cook', 'isaac.cook@example.com', 'password3435', 1234567826, 'user'),
+('Jade', 'Morgan', 'jade.morgan@example.com', NULL, 1234567827, 'user_nr'),
+('Kyle', 'Bell', 'kyle.bell@example.com', 'password3839', 1234567828, 'user'),
+('Leah', 'Cooper', 'leah.cooper@example.com', NULL, 1234567829, 'user_nr'),
+('Mason', 'Bailey', 'mason.bailey@example.com', 'password4243', 1234567830, 'user'),
+('Nina', 'Rivera', 'nina.rivera@example.com', NULL, 1234567831, 'user_nr'),
+('Oscar', 'Howard', 'oscar.howard@example.com', 'password4647', 1234567832, 'user'),
+('Penny', 'Harris', 'penny.harris@example.com', NULL, 1234567833, 'user_nr'),
+('Quincy', 'Garcia', 'quincy.garcia@example.com', 'password5051', 1234567834, 'user'),
+('Rita', 'Ward', 'rita.ward@example.com', NULL, 1234567835, 'user_nr'),
+('Steve', 'Russell', 'steve.russell@example.com', 'password5455', 1234567836, 'user'),
+('Troy', 'Diaz', 'troy.diaz@example.com', NULL, 1234567837, 'user_nr');
