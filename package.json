@@ -17,6 +17,7 @@
     "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.11.3",
+    "mqtt": "^5.10.1",
     "mysql2": "^3.10.1",
     "nodemon": "^3.1.5",
     "sequelize": "^6.37.3",

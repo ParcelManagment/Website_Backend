@@ -14,6 +14,8 @@ const syncDb = require('./database/syncDb');
 const User = require('./models/user.js');
 const Package = require("./models/package.js");
 const cors = require('cors');
+const client = require('./mqtt/mqttConfig.js');
+const mqttHandler = require("./mqtt/device.js")
 const port = 3000
 
 app.use(cors());
