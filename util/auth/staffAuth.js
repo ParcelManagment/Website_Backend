@@ -10,7 +10,7 @@ const isStaff = (req, res, next) => {
     }
 
     try{
-        const payload = authoByRoles(token, ["station_master","general_staff"]);
+        const payload = authoByRoles(token, ["station_master","general_staff","admin"]);
         req.staff_id = payload.employee_id;
         req.staff_role = payload.role;
         req.station = payload.station;
