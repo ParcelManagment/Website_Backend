@@ -49,7 +49,7 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
             submitted_by: emp_id
         }, { transaction: t });
         
-        sendEmail(sender.email, receiver.email, newID, packageData.type)
+        sendEmail(sender.email, receiver.email, newID, packageData.type, packageData.destination)
         t.commit();
         res.status(201).json({ packageID: newID });
         console.log('Inserted Package:');

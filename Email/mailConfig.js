@@ -24,7 +24,7 @@ const getMailOptions = (email, html)=> {
 
 
 
-const sendEmail = (sender, receiver, package_id, package_type)=>{
+const sendEmail = (sender, receiver, package_id, package_type, station)=>{
 
     const htmlsender = `<div style="display: flex; align-items: center; flex-direction: column; max-width: 50rem; padding: 2rem; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
 
@@ -76,6 +76,10 @@ const htmlreceiver = `
             <span style="font-size: 1rem; font-weight: 600; color: #333;">${package_type}</span>
         </span>
         <br/><br/>
+        <span style="font-size: 1rem; font-family: Arial, Helvetica, sans-serif;">Pickup Station: 
+        <span style="font-size: 1rem; font-weight: 600; color: #333;">${station}</span>
+    </span>
+    <br/><br/>
 
         <span style="font-size: 1rem; font-family: Arial, Helvetica, sans-serif;">Sender's Email: 
             <span style="font-size: 1rem; font-weight: 600; color: #333;">${sender}</span>
