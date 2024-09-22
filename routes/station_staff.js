@@ -186,6 +186,10 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
+router.post('/changepass', (req, res, next)=>{
+   
+})
+
 router.post('/approve', isStationMaster, async (req, res, next)=>{
     
     const connection = await getConnection();

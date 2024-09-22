@@ -11,6 +11,7 @@ const validateSender = require('../util/validation/participant/validateSender');
 const validateReceiver = require('../util/validation/participant/validateReceiver');
 const userValiadation = [validateSender, validateReceiver];
 const { getConnection } = require('../database/database'); // Connection for raw MySQL queries
+const { sendEmail } = require('../Email/mailConfig');
 
 // Route for creating a new package
 router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadation, async (req, res, next) => {
@@ -31,6 +32,7 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
         const receiver = req.body.receiver;
         const emp_id = req.staff_id;
         const departure = req.station;
+        
 
         const newPackage = await Package.create({
             tag_id: packageData.tag_id,
@@ -46,7 +48,8 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
             receiver_type: receiver.receiver_type,
             submitted_by: emp_id
         }, { transaction: t });
-
+        
+        sendEmail(sender.email, receiver.email, newID, packageData.type)
         t.commit();
         res.status(201).json({ packageID: newID });
         console.log('Inserted Package:');
