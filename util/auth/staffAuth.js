@@ -50,7 +50,7 @@ const isStationMaster = (req, res, next)=>{
         }
     
         try{
-        const payload = authoByRoles(token, ["admin"]);
+        const payload = authoByRoles(token, ["admin", "station_master"]);
             req.staff_id = payload.employee_id;
             req.staff_role = payload.role;
             req.station = payload.station;

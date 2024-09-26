@@ -39,10 +39,14 @@ router.get("/quicks",async (req, res, next)=>{
         const [[revenue]] = await connection.query(query2);
         const [[orders]] = await connection.query(query3);
         const [[average]] = await connection.query(query4);
+        const currentTime = new Date(); 
+        const time = formatDate(currentTime); 
+
         res.status(200).json({users:users.users
                                 ,revenue:revenue.total_Revenue
                                 ,orders:orders.orders
-                                ,average:average.average})
+                                ,average:average.average
+                                ,time:time})
     }catch(err){
         res.status(500).json({Error:"Error Getting Data"})
         console.log(err)
@@ -50,6 +54,18 @@ router.get("/quicks",async (req, res, next)=>{
         connection.release()
     }
 
+    function formatDate(date) {
+        const options = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+        const formattedDate = new Intl.DateTimeFormat('en-GB', options).format(date);
+        
+        const [day, month, year] = formattedDate.split(', ')[0].split(' ');
+        const [hour, minute] = formattedDate.split(', ')[1].split(':');
+    
+        return `${day} ${month} ${year} ${hour}:${minute}`;
+    }
+    
+    
+    
 })
 
 router.get('/revenue', async (req, res, next)=>{

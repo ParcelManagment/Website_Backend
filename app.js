@@ -15,7 +15,8 @@ const User = require('./models/user.js');
 const Package = require("./models/package.js");
 const cors = require('cors');
 const client = require('./mqtt/mqttConfig.js');
-const mqttHandler = require("./mqtt/device.js")
+const mqttHandler = require("./mqtt/device.js");
+const { isAdmin } = require('./util/auth/staffAuth.js');
 const port = 3000
 
 app.use(cors());
@@ -30,17 +31,17 @@ testDbConnection();
 app.use(express.json())
 app.use(cookieParser())
 
-app.use('/admin', admin);  // admin routes for employee iot device management
-app.use('/summary', summary) // summery for admin dashbord (complex queries with data summary)
+app.use('/api/admin', admin);  // admin routes for employee iot device management
+app.use('/api/summary',isAdmin, summary) // summery for admin dashbord (complex queries with data summary)
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
 app.use("/message",message); //chat bot can use from this.
 app.use("/deviceIds", deviceIds); 
+
 app.get('/logout', (req, res, next)=>{
   res.clearCookie('token');
   res.send("loggedout")
-
 })
 
 app.get('/', (req, res) => {
@@ -50,6 +51,8 @@ app.get('/', (req, res) => {
 app.get('/login', (req, res) => {
   res.send('This is login')
 })
+
+
 
 app.get("/hello", (req, res) => {
   const message = "Hello message";

@@ -224,3 +224,13 @@ INSERT INTO user (first_name, last_name, email, password, mobile_number, role) V
 ('Rita', 'Ward', 'rita.ward@example.com', NULL, 1234567835, 'user_nr'),
 ('Steve', 'Russell', 'steve.russell@example.com', 'password5455', 1234567836, 'user'),
 ('Troy', 'Diaz', 'troy.diaz@example.com', NULL, 1234567837, 'user_nr');
+
+
+
+
+
+
+
+
+
+

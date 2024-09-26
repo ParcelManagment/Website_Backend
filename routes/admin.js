@@ -17,7 +17,7 @@ router.get('/hash',async (req, res, next)=>{
 
 
 
-router.post('/login', async (req, res, next)=>{
+router.post('/login', async (req, res, next)=>{ 
 
     const connection = await getConnection();
     if(!connection){
@@ -36,11 +36,16 @@ router.post('/login', async (req, res, next)=>{
         connection.release();
         return;
     }
+    const roles = ["admin", "station_master"]
     try {
         const user = await findUser(employee_id, connection);
         if (!user) {
             res.status(401).json({ Error: "User not found" });
             return;
+        }
+        if(!roles.includes(user.role)){
+            res.status(401).json({Error:"Unauthorized"})
+            return
         }
        
         const validPassword = await bcrypt.compare(password, user.password);
@@ -51,7 +56,7 @@ router.post('/login', async (req, res, next)=>{
 
         const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '3h'});
         res.cookie('token', token, {httpOnly: true })
-        res.status(200).json({ Error: null, message: "Login Successful" });
+        res.status(200).json({ Error: null, message: "Login Successful" ,user:{employee_id:user.employee_id, fname:user.first_name, lname:user.last_name, role:user.role}});
 
     } catch (err) {
         res.status(500).json({ Error: "Something went Wrong while login" });
@@ -60,7 +65,34 @@ router.post('/login', async (req, res, next)=>{
         connection.release();
     }
 })
+router.get('/verify',isAdmin, async(req, res)=>{
+   
+    const {staff_id, staff_role, station} = req
+    const connection = await getConnection();
+    
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
 
+    try {
+        const user = await findUser(staff_id, connection);
+        if (!user) {
+            res.status(401).json({ Error: "User not found" });
+            return;
+        }
+        res.status(200).json({employee_id:user.employee_id, fname:user.first_name, lname:user.last_name, role:user.role});
+
+    } catch (err) {
+        res.status(500).json({ Error: "Something went Wrong while Authenticating" });
+        console.log(err)
+    }finally{
+        connection.release();
+    }
+
+    
+})
 router.post('/createuser', isAdmin, async (req, res, next)=>{
 
     // extracting the submitted data
