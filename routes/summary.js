@@ -208,4 +208,145 @@ router.get('/usertypes', async (req ,res, next)=>{
     }
 })
 
+router.get('/deliveries',async (req, res)=>{
+
+    const connection = await getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
+
+    const query1 = `SELECT 
+                        COUNT(price) AS completed 
+                    FROM 
+                        package 
+                    WHERE 
+                        submitted >= CURDATE() - INTERVAL 7 DAY
+                    AND
+                        completed = true;`
+
+    const query2 = `SELECT 
+                        COUNT(price) AS cancelled 
+                    FROM 
+                        package 
+                    WHERE 
+                        submitted >= CURDATE() - INTERVAL 7 DAY
+                    AND
+                        cancelled = true;`
+
+    const query3 = `SELECT 
+                        COUNT(price) AS ongoing 
+                    FROM 
+                        package 
+                    WHERE 
+                        submitted >= CURDATE() - INTERVAL 7 DAY
+                    AND
+                        cancelled = false
+                    AND 
+                        completed = false;`
+
+
+    const query4 = `SELECT departure AS station, COUNT(package_id)
+                    AS
+                        value
+                    FROM
+                        package 
+                    WHERE 
+                        submitted >= CURDATE() - INTERVAL 7 DAY
+                    GROUP BY 
+                        station
+                    ORDER BY 
+                        value DESC
+                    LIMIT 3`
+
+    const query5 = `SELECT destination AS station, COUNT(package_id)
+                    AS
+                        value
+                    FROM
+                        package 
+                    WHERE 
+                        submitted >= CURDATE() - INTERVAL 7 DAY
+                    GROUP BY 
+                        station
+                    ORDER BY 
+                        value DESC
+                    LIMIT 3`
+
+    const query6 = `SELECT 
+                        (
+                            (SELECT COUNT(package_id) FROM package
+                                WHERE 
+                                    submitted >= CURDATE() - INTERVAL 7 DAY
+                                AND
+                                    (completed = true OR cancelled = true)
+                            )
+                            -
+                            (SELECT COUNT(package_id) FROM package
+                                WHERE 
+                                    submitted >= CURDATE() - INTERVAL 7 DAY
+                                AND 
+                                    cancelled = true
+                            )
+                        ) 
+                        /
+                        (SELECT COUNT(package_id) FROM package
+                            WHERE 
+                                submitted >= CURDATE() - INTERVAL 7 DAY
+                            AND
+                                (completed = true OR cancelled = true)
+                        ) *100 AS ratio;`
+
+        const query7 = `SELECT 
+                            CASE 
+                                WHEN total_customers_at_start = 0 THEN 0  -- Avoid division by zero
+                                ELSE (total_customers_at_end - new_customers) * 100.0 / total_customers_at_start 
+                            END AS retention_rate
+                        FROM (
+                            SELECT 
+                                (SELECT COUNT(DISTINCT sender_id) 
+                                FROM package 
+                                WHERE submitted < CURDATE() - INTERVAL 7 DAY) AS total_customers_at_start,
+                        
+                                (SELECT COUNT(DISTINCT sender_id) 
+                                FROM package 
+                                WHERE submitted >= CURDATE() - INTERVAL 7 DAY) AS total_customers_at_end,
+                        
+                                (SELECT COUNT(DISTINCT sender_id) 
+                                FROM package 
+                                WHERE submitted >= CURDATE() - INTERVAL 7 DAY
+                                AND sender_id NOT IN (
+                                    SELECT sender_id 
+                                    FROM package 
+                                    WHERE submitted < CURDATE() - INTERVAL 7 DAY
+                                )) AS new_customers
+                        ) AS retention_data;` 
+    try{
+        
+        const [[completed]] = await connection.query(query1);
+        const [[cancelled]] = await connection.query(query2);
+        const [[ongoing]] = await connection.query(query3);
+        const [departure] = await connection.query(query4);
+        const [destination] = await connection.query(query5);
+        const [success_rate] = await connection.query(query6);
+        const [retention] = await connection.query(query7);
+
+        res.status(200).json({
+            completed:completed.completed
+            ,ongoing:ongoing.ongoing
+            ,cancelled:cancelled.cancelled
+            ,departure:departure
+            ,destination:destination
+            ,success_rate:success_rate
+            ,retention:retention})
+
+    }catch(err){
+        res.status(500).json({Error:"Error Getting Data"})
+        console.log(err)
+    }finally{
+        connection.release()
+    }
+
+})
+
 module.exports = router

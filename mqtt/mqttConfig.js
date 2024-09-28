@@ -4,12 +4,12 @@ const mqtt = require('mqtt');
 // MQTT over TLS with authentication
 const options = {
     host: process.env.MQTT_HOST,
-    port: 8883, // For MQTT over TLS
-    protocol: 'mqtts', // MQTT over SSL/TLS
-    clientId: process.env.MQTT_CLIENTID, // Replace with a unique client ID
-    username: process.env.MQTT_USERNAME, // Replace with your HiveMQ username
-    password: process.env.MQTT_PASSWORD, // Replace with your HiveMQ password
-};
+    port: 1883, // For MQTT over TLS
+    protocol: 'mqtt', // MQTT over SSL/TLS
+    clientId: process.env.MQTT_CLIENTID, // unique client ID
+    username: process.env.MQTT_USERNAME, // HiveMQ username
+    password: process.env.MQTT_PASSWORD, //  HiveMQ password
+};  
 
 const client = mqtt.connect(options);
 
@@ -22,7 +22,7 @@ client.on('connect', () => {
       console.error('Subscription error:', err);
     } else {
       [{topic}] = data
-      console.log(`Subscribed to ${topic}`);
+      console.log(`Subscribed to ${topic ? topic: ""}`);
     }
   });
   client.subscribe('departure', (err, data) => {

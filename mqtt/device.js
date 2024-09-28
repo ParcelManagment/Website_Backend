@@ -5,7 +5,6 @@ const client = require("./mqttConfig");
 
 
 client.on('message', (topic, message) => {
-
     const [ MAC_ID, action, ...data] = message.toString().split('|'); 
     switch (action) {
         case 'location':
