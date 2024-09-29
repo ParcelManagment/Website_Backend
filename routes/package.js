@@ -256,4 +256,56 @@ router.put('/edituser/:id', async(req, res)=> {
     
 });
 
+//Route for mark the package as completed
+router.put("/completepackage/:id", async (req, res) => {
+    const packageId = req.params.id;
+
+    try{
+        const transaction = await sequelize.transaction();
+
+        try{
+            //Find the package by ID
+            const packageResult = await Package.findOne({
+                where: {package_id: packageId},
+                attributes: ["completed"], //Fetech only the 'completed status
+                transaction
+            });
+
+            if (!packageResult){
+                return res.status(404).json({message:"Pacakge not found"});
+            }
+
+            //Check if the package is already completed
+            if (packageResult.completed === true){
+                return res.status(400).json({message: "Package is already marked as completed"});
+            }
+
+            //Mark the package as completed
+            await Package.update(
+                {completed:true},
+                {where: { package_id: packageId }, transaction}
+            );
+
+            //Commit the transaction
+            await transaction.commit();
+
+            res.status(200).json({message: "Package marked as completed!"});
+
+
+        }
+        catch (error) {
+            //Rollback transaction if any error occurs
+            await transaction.rollback();
+            console.error("Error completing package",error);
+            res.status(500).json({message: "Error completing package",error});
+
+        }
+
+    }
+    catch(error){
+        console.error('Unexpected database error:', error);
+        res.status(500).json({message:"Unexpected database error",error});
+    }
+});
+
 module.exports = router;
