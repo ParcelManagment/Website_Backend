@@ -95,6 +95,7 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
     }
 });
 
+
 // New route for fetching by ID
 // Fetch package by ID using Sequelize
 router.get('/fetchbyid/:id', async (req, res) => {
