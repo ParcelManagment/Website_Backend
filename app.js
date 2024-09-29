@@ -31,8 +31,8 @@ testDbConnection();
 app.use(express.json())
 app.use(cookieParser())
 
-app.use('/api/admin', admin);  // admin routes for employee iot device management
-app.use('/api/summary',isAdmin, summary) // summery for admin dashbord (complex queries with data summary)
+app.use('/admin', admin);  // admin routes for employee iot device management
+app.use('/summary',isAdmin, summary) // summery for admin dashbord (complex queries with data summary)
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation

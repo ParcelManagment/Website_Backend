@@ -155,7 +155,7 @@ router.post('/createuser', isAdmin, async (req, res, next)=>{
     }
 })
 
-router.get('/employees', async(req, res, next)=>{
+router.get('/employees', isAdmin, async(req, res, next)=>{
 
     const {role, station, search_term} = req.query;
     const connection = await getConnection();
@@ -200,7 +200,7 @@ router.get('/employees', async(req, res, next)=>{
         connection.release();
     }
 })
-router.get('/promote',async(req, res, next)=>{
+router.get('/promote', isAdmin, async(req, res, next)=>{
 
     const {employee_id} = req.query; 
 
@@ -282,7 +282,7 @@ router.post('/createdevice',isAdmin, async(req,res,next)=>{
     }
 
 })
-router.get('/lastdevice', async (req, res, next)=>{
+router.get('/lastdevice', isAdmin, async (req, res, next)=>{
 
     const connection = await getConnection();
     if(!connection){
