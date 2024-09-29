@@ -81,6 +81,7 @@ router.post('/signup', async (req, res, next) => {
 });*/
 
 
+
 router.post('/login', async (req, res, next) => {
 
   
@@ -186,8 +187,57 @@ router.get('/stafflist', async (req, res, next)=>{
     
 })
 
-router.post('/changepass', (req, res, next)=>{
-   
+router.post('/changepass', async (req, res, next)=>{
+    const connection = await getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
+
+    const data = req.body;
+    const employee_id = data.employee_id;
+    const password = data.password;
+    const new_password = data.new_password
+
+    // check empty fields
+    if (!employee_id || !password || !new_password) {
+        res.status(400).json({ Error: "Empty Fields. Please Try Again" });
+        connection.release();
+        return;
+    }
+       const validationError = validate(new_password);
+    if(validationError){
+        res.status(400).json({Error: validationError})
+        connection.release();
+        return;
+    }
+
+    try {
+        const user = await findUser(employee_id, connection);
+        if (!user) {
+            res.status(401).json({ Error: "User not found" });
+            return;
+        }
+        
+        const validPassword = await verifyPassword(password, user.password);
+        if (!validPassword) {
+            res.status(401).json({ Error: "Invalid Password" });
+            return;
+        }
+
+        const hash = await hashPassword(new_password)
+        const result = await updateCredientials(employee_id, hash, connection)
+        console.log(result)
+        res.status(201).json({Error: null, message: 'password Changed Successfully', userId: result.employee_id })
+       
+
+    } catch (err) {
+        res.status(500).json({ Error: "Something went Wrong while login" });
+        console.log(err)
+    }finally{
+        connection.release();
+    }
 })
 
 router.post('/approve', isStationMaster, async (req, res, next)=>{
@@ -278,6 +328,37 @@ async function updateRole(connection, employee_id){
     }
 }
 
+const validate = (password)=>{
+    
+    if(password.length<6){
+        return "Password should have minimum 6 characters"
+    }
+    const containsUppercase = /[A-Z]/.test(password);
+    const containsSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if(!containsUppercase || !containsSymbol){
+        return "Oops! Make sure your password has at least one uppercase letter and one special character."
+    }
+} 
+
+
+async function updateCredientials(employee_id, hashPassword, connection){
+    
+    try {
+        const query = 'UPDATE station_staff SET password = ? WHERE employee_id = ?';
+        const [result] = await connection.query(query, [hashPassword,employee_id]);
+        return result;
+    } catch (err) {
+        console.error("Database operation failed:", err);
+        throw new Error("Server Error");
+    }
+
+}
+async function hashPassword(password){
+    const saltRound = 10;
+    const hash = await bcrypt.hash(password,saltRound);
+    return hash;
+}
 module.exports = router;  
 
 

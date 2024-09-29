@@ -329,7 +329,7 @@ router.get('/deliveries',async (req, res)=>{
         const [departure] = await connection.query(query4);
         const [destination] = await connection.query(query5);
         const [success_rate] = await connection.query(query6);
-        const [retention] = await connection.query(query7);
+        const [[retention]] = await connection.query(query7);
 
         res.status(200).json({
             completed:completed.completed

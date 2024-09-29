@@ -384,16 +384,7 @@ function validate(employee_id, fname, lname, password, station, role){
     if(typeof password !== 'string'){
         return 'Invalid Password'
     }
-/*
-    if(password.length<6){
-        return "Password should have minimum 6 characters"
-    }
-    const containsUppercase = /[A-Z]/.test(password);
-    const containsSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-    if(!containsUppercase || !containsSymbol){
-        return "Oops! Make sure your password has at least one uppercase letter and one special character."
-    }*/
 
     if(!(/^\d{5}$/.test(employee_id))){
         return "invalid employee number"
