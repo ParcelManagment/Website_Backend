@@ -7,12 +7,12 @@ router.get("/", async (req, res) => {
     try {
         // Fetch details by joining tables and including the completed status
         const packageDetails = await Package.findAll({
-            attributes: ["package_id", "destination", "completed"],  
+            attributes: ["package_id", "destination", "completed", "price"],  
             include: [
                 {
                     model: User,
                     as: "senderUser",
-                    attributes: ["first_name", "last_name", "email"],
+                    attributes: ["first_name", "last_name"],
                 }
             ]
         });
