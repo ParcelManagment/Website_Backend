@@ -86,15 +86,15 @@ if (!response.ok) {
 router.get("/track", async (req, res) => {
   console.log("Received request with query:", req.query); // Debugging
 
-  const trackingId = req.query.trackingId; // Assuming the query parameter is called "userID"
+  const packageId = req.query.trackingId; // Assuming the query parameter is called "userID"
 
-  if (!trackingId) {
+  if (!packageId) {
     // Handle case where userID is not provided
     return res.status(400).json({
       error: "userID is missing from the request",
     });
   }
-const packageId = 'your_package_id';  // You will replace this with the actual package_id
+
 
 const result = await sequelize.query(`
   SELECT 
