@@ -95,16 +95,16 @@ router.post('/new', isStaff, validateNewPackage, findParticipant, userValiadatio
     }
 });
 
-// New route for fetching by ID
-// Fetch package by ID using Sequelize
+
+//route for fetching by ID
 router.get('/fetchbyid/:id', async (req, res) => {
     const fetchid = req.params.id;
     
     try {
-        // Fetch package details, including sender_id, receiver_id, and cancelled status
+        // Fetch package details, including sender_id, receiver_id, cancelled status, and price
         const packageResult = await Package.findOne({
             where: { package_id: fetchid },
-            attributes: ['type', 'package_condition', 'destination', 'sender_id', 'receiver_id', 'cancelled']  // Include cancelled status
+            attributes: ['type', 'package_condition', 'destination', 'sender_id', 'receiver_id', 'cancelled', 'price']  
         });
         
         if (!packageResult) {
@@ -141,6 +141,7 @@ router.get('/fetchbyid/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
   
 
