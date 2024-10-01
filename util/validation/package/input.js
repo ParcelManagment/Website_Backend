@@ -20,7 +20,7 @@ const cities = [
   ];
 
 const validateNewPackage = [
-    body("package.tag_id").notEmpty().isLength({ min: 8, max: 16 }).isAlphanumeric().withMessage("tag_id is not valid"),
+    body("package.tag_id").notEmpty().isLength({ min: 8, max: 16 }).matches(/^[a-zA-Z0-9\s]+$/).withMessage("tag_id is not valid"),
     body("package.type").notEmpty().isIn(["vehicle", "furniture", "food", "grocery", "chemical", "other"]).withMessage("not a valid package type"),
     body("package.package_condition").notEmpty().isIn(['new', 'used']).withMessage("invalid package condition"),
     body("package.destination").notEmpty().isIn(cities).isString().withMessage("invalid destination"),
