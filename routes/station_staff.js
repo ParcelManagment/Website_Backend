@@ -162,7 +162,7 @@ router.get('/profile', isStaff, async (req, res) => {
 router.get('/logout', (req, res, next)=>{
     res.clearCookie('token');
     res.status(201).json({message: "successfully logout"})
-    connection.release();
+    
 })
 
 router.get('/stafflist', async (req, res, next)=>{
