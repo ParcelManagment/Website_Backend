@@ -57,6 +57,8 @@ router.post('/signup', async (req, res, next) => {
     try{
         const hash = await hashPassword(password)
 
+
+
         // CREATE JWT AND SAVE DATA IN DATABSE
         const token = jwt.sign({fname:  fname, lname: lname, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
         const result = await savaUserCredientials(email, fname, lname, hash, mobileNum, connection)
