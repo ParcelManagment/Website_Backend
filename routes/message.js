@@ -123,17 +123,17 @@ if (result.length > 0) {
   const { Longitude, Latitude } = result[0];
   console.log('Longitude:', Longitude);
   console.log('Latitude:', Latitude);
-
   res.status(200).json({
-    location: `${Longitude},${Latitude}`,
-  });
+      location: `${Longitude},${Latitude}`,
+    });
 } else {
   console.log('No data found for the given package_id.');
-  res.status(200).json({
+   res.status(200).json({
     message: 'No data found for the given package_id.',
   });
 }
-}
+    
+  });
 
 
 
