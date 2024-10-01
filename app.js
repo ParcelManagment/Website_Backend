@@ -61,6 +61,6 @@ app.get("/hello", (req, res) => {
   res.send(message);
 });
 
-app.listen(port,'0.0.0.0', () => {
+app.listen(port, () => {
   console.log(`app listening on port ${port}`)
 })
