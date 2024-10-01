@@ -1,0 +1,241 @@
+DROP DATABASE parcel;
+CREATE DATABASE parcel; 
+use parcel;
+CREATE TABLE user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    mobile_number INT(10) NOT NULL,
+    role ENUM('user', 'user_nr') NOT NULL DEFAULT 'user_nr',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE station_staff (
+    employee_id INT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    station VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM("station_master","general_staff", "admin") NOT NULL, 
+    approved_by INT ,
+    created_by INT ,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (approved_by) REFERENCES station_staff(employee_id),
+    FOREIGN KEY (created_by) REFERENCES station_staff(employee_id)
+); 
+
+CREATE TABLE trackingDevice (
+  device_id INT PRIMARY KEY AUTO_INCREMENT,
+  Longitude DECIMAL(10, 6),
+  Latitude DECIMAL(10, 6),
+  device_status ENUM('in_use', 'not_in_use') DEFAULT 'in_use' NOT NULL,
+  Last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  MAC_id VARCHAR(20) UNIQUE NOT NULL,
+  iccid VARCHAR(20) UNIQUE NOT NULL,
+  installation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  installed_by INT NOT NULL 
+);
+
+CREATE TABLE package (
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
+  package_id CHAR(8) UNIQUE NOT NULL,
+  tag_id VARCHAR(255) NOT NULL,
+  sender_id INTEGER NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  type ENUM("vehicle", "furniture", "food", "grocery", "chemical", "other") NOT NULL,
+  package_condition ENUM('new', 'used') NOT NULL,
+  departure VARCHAR(255) NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  price INTEGER NOT NULL,
+  tracking_device_id INTEGER DEFAULT NULL,
+  submitted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  out_for_delivery TIMESTAMP,
+  arrived TIMESTAMP,
+  completed BOOLEAN DEFAULT FALSE,
+  cancelled BOOLEAN DEFAULT FALSE,
+  submitted_by INT NOT NULL,
+  FOREIGN KEY (submitted_by) REFERENCES station_staff (employee_id),
+  FOREIGN KEY (receiver_id) REFERENCES user (id),
+  FOREIGN KEY (sender_id) REFERENCES user (id)
+); 
+
+
+DELIMITER //
+
+CREATE TRIGGER before_user_insert
+BEFORE INSERT ON user
+FOR EACH ROW
+BEGIN
+    IF NEW.role = 'user' AND NEW.password IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Password cannot be NULL for role user';
+    END IF;
+    IF NEW.role = 'user_nr' AND NEW.password IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Password must be NULL for role user_nr';
+    END IF;
+END //
+
+DELIMITER ;
+
+
+
+INSERT INTO user (
+    first_name, last_name, email, password, mobile_number, role, created_at
+) VALUES (
+    'Alice', 'Smith', 'alice.smith@example.com', 'password123', 1234567890, 'user', CURRENT_TIMESTAMP
+);
+INSERT INTO user ( first_name, last_name, email, password, mobile_number, role, created_at ) VALUES ( 'Alice', 'Smith', 'ali0cae.smith@example.com', 'password123', 1234567890, 'user', CURRENT_TIMESTAMP );
+INSERT INTO user ( first_name, last_name, email, password, mobile_number, role, created_at ) VALUES ( 'Alice', 'Smith', 'aliaaae.smith@example.com', 'password123', 1234567890, 'user', CURRENT_TIMESTAMP );
+
+
+INSERT INTO station_staff(
+    employee_id, first_name, last_name, password, role,station, approved_by, created_by
+) VALUES (
+    1, 'John', 'Doe', 'securepassword', 'station_master',"Colombo", NULL, NULL
+);
+
+
+INSERT INTO trackingDevice (
+    device_id, Longitude, Latitude, device_status, MAC_id, iccid, installed_by
+) VALUES (
+    1000, 12.345678, 98.765432, 'in_use', '00:1A:2B:3C:4D:5E', '89014101234567890', 10001
+);
+
+
+INSERT INTO package (
+    package_id, tag_id, sender_id, receiver_id, type, package_condition, 
+    destination, departure, price, tracking_device_id, submitted_by
+) VALUES (
+    'AAAA0000', '1', 1, 1, 'food', 'new', 
+    'Colombo',"Matara", 100, 1, 1
+);
+Insert into station_staff (employee_id, first_name, last_name, station, password, role, created_by) values (10001, 'admin', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 10001);
+Insert into station_staff (employee_id, first_name, last_name, station, password, role, created_by) values (10003, 'general_staff', 'uoc', 'Colombo', '$2b$10$RAnAPGUYdLIeC3fJo6XWLOg5hZDqAei2PVO106C0ixcmfir9vFecS', 'admin', 10003);
+
+
+INSERT INTO trackingDevice (Longitude, Latitude, device_status, MAC_id, iccid, installed_by)
+VALUES
+  (80.2345, 7.5678, 'in_use', 'AB:CD:EF:01:23:45', '89012345678901234571', 2),
+  (79.8765, 6.7890, 'not_in_use', '56:78:90:12:34:56', '89012345678901234572', 3),
+  (80.5432, 7.6789, 'in_use', '98:76:54:32:10:FF', '89012345678901234573', 1),
+  (79.6543, 6.8901, 'in_use', '00:11:22:33:44:55', '89012345678901234574', 4),
+  (80.3456, 7.8902, 'not_in_use', '66:77:88:99:AA:BB', '89012345678901234575', 2),
+  (79.4321, 6.5432, 'in_use', 'CC:DD:EE:FF:00:11', '89012345678901234576', 3),
+  (80.8765, 7.1234, 'not_in_use', '22:33:44:55:66:77', '89012345678901234577', 1),
+  (79.3210, 6.8765, 'in_use', '44:55:66:77:88:99', '89012345678901234578', 4);
+
+
+
+-- admin password Admin@123
+
+
+
+-- package Queries
+
+
+INSERT INTO package (
+    package_id, tag_id, sender_id, receiver_id, type, package_condition, 
+    departure, destination, price, tracking_device_id, submitted, 
+    out_for_delivery, arrived, completed, cancelled, submitted_by
+) VALUES
+('AAAA0003', 'TAG0003', 1, 3, 'food', 'new', 'Colombo', 'Kandy', 50, 1, NOW() - INTERVAL 14 DAY, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 10 DAY, TRUE, FALSE, 10003),
+('AAAA0004', 'TAG0004', 1, 1, 'furniture', 'used', 'Galle', 'Jaffna', 150, 1, NOW() - INTERVAL 13 DAY, NOW() - INTERVAL 11 DAY, NOW() - INTERVAL 9 DAY, TRUE, FALSE, 10003),
+('AAAA0005', 'TAG0005', 3, 1, 'grocery', 'new', 'Negombo', 'Anuradhapura', 30, 1, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 8 DAY, TRUE, FALSE, 10003),
+('AAAA0006', 'TAG0006', 1, 3, 'chemical', 'new', 'Trincomalee', 'Batticaloa', 80, 1, NOW() - INTERVAL 11 DAY, NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 7 DAY, TRUE, FALSE, 10003),
+('AAAA0007', 'TAG0007', 3, 1, 'vehicle', 'used', 'Matara', 'Kurunegala', 200, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 6 DAY, TRUE, FALSE, 10003),
+('AAAA0008', 'TAG0008', 1, 3, 'food', 'new', 'Puttalam', 'Vavuniya', 55, 1, NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, TRUE, FALSE, 10003),
+('AAAA0009', 'TAG0009', 3, 1, 'furniture', 'used', 'Polonnaruwa', 'Kilinochchi', 160, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY, TRUE, FALSE, 10003),
+('AAAA0010', 'TAG0010', 1, 3, 'grocery', 'new', 'Mannar', 'Vavuniya', 35, 1, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, TRUE, FALSE, 10003),
+('AAAA0011', 'TAG0011', 3, 1, 'chemical', 'used', 'Colombo', 'Galle', 85, 1, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY, TRUE, FALSE, 10003),
+('AAAA0012', 'TAG0012', 1, 3, 'vehicle', 'new', 'Kandy', 'Jaffna', 210, 1, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 1 DAY, TRUE, FALSE, 10003),
+('AAAA0013', 'TAG0013', 3, 1, 'food', 'new', 'Negombo', 'Anuradhapura', 70, NULL, NOW() - INTERVAL 4 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0014', 'TAG0014', 1, 3, 'furniture', 'used', 'Trincomalee', 'Batticaloa', 140, NULL, NOW() - INTERVAL 3 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0015', 'TAG0015', 3, 1, 'grocery', 'new', 'Matara', 'Kurunegala', 40, NULL, NOW() - INTERVAL 2 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0016', 'TAG0016', 1, 3, 'chemical', 'new', 'Puttalam', 'Vavuniya', 90, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0017', 'TAG0017', 3, 1, 'vehicle', 'used', 'Polonnaruwa', 'Kilinochchi', 220, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0018', 'TAG0018', 1, 3, 'food', 'new', 'Mannar', 'Vavuniya', 75, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0019', 'TAG0019', 3, 1, 'furniture', 'new', 'Colombo', 'Kandy', 150, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0020', 'TAG0020', 1, 3, 'grocery', 'used', 'Galle', 'Jaffna', 60, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0021', 'TAG0021', 3, 1, 'chemical', 'new', 'Negombo', 'Anuradhapura', 95, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0022', 'TAG0022', 1, 3, 'vehicle', 'used', 'Trincomalee', 'Batticaloa', 230, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0023', 'TAG0023', 3, 1, 'food', 'new', 'Matara', 'Kurunegala', 50, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0024', 'TAG0024', 1, 3, 'furniture', 'used', 'Puttalam', 'Vavuniya', 140, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0025', 'TAG0025', 3, 1, 'grocery', 'new', 'Polonnaruwa', 'Kilinochchi', 35, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0026', 'TAG0026', 1, 3, 'chemical', 'used', 'Mannar', 'Vavuniya', 85, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0027', 'TAG0027', 3, 1, 'vehicle', 'new', 'Colombo', 'Kandy', 210, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0028', 'TAG0028', 1, 3, 'food', 'new', 'Galle', 'Jaffna', 65, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0029', 'TAG0029', 3, 1, 'furniture', 'used', 'Negombo', 'Anuradhapura', 160, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0030', 'TAG0030', 1, 3, 'grocery', 'new', 'Trincomalee', 'Batticaloa', 30, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0031', 'TAG0031', 3, 1, 'chemical', 'new', 'Matara', 'Kurunegala', 80, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003),
+('AAAA0032', 'TAG0032', 1, 3, 'vehicle', 'used', 'Puttalam', 'Vavuniya', 200, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, FALSE, FALSE, 10003);
+
+-- user data 
+-- Insert sample users
+INSERT INTO user (first_name, last_name, email, password, mobile_number, role) VALUES
+('John', 'Doe', 'john.doe@example.com', 'password123', 1234567890, 'user'),
+('Jane', 'Smith', 'jane.smith@example.com', NULL, 1234567891, 'user_nr'),
+('Alice', 'Johnson', 'alice.johnson@example.com', 'password789', 1234567892, 'user'),
+('Bob', 'Brown', 'bob.brown@example.com', NULL, 1234567893, 'user_nr'),
+('Charlie', 'Davis', 'charlie.davis@example.com', 'password112', 1234567894, 'user'),
+('Diana', 'Evans', 'diana.evans@example.com', NULL, 1234567895, 'user_nr'),
+('Ethan', 'Clark', 'ethan.clark@example.com', 'password415', 1234567896, 'user'),
+('Fiona', 'Martinez', 'fiona.martinez@example.com', NULL, 1234567897, 'user_nr'),
+('George', 'Lopez', 'george.lopez@example.com', 'password718', 1234567898, 'user'),
+('Hannah', 'Walker', 'hannah.walker@example.com', NULL, 1234567899, 'user_nr'),
+('Ivy', 'Hall', 'ivy.hall@example.com', 'password000', 1234567800, 'user'),
+('Jack', 'Allen', 'jack.allen@example.com', NULL, 1234567801, 'user_nr'),
+('Kelly', 'Young', 'kelly.young@example.com', 'password567', 1234567802, 'user'),
+('Leo', 'King', 'leo.king@example.com', NULL, 1234567803, 'user_nr'),
+('Mia', 'Wright', 'mia.wright@example.com', 'password321', 1234567804, 'user'),
+('Noah', 'Scott', 'noah.scott@example.com', NULL, 1234567805, 'user_nr'),
+('Olivia', 'Green', 'olivia.green@example.com', 'password987', 1234567806, 'user'),
+('Paul', 'Adams', 'paul.adams@example.com', NULL, 1234567807, 'user_nr'),
+('Quinn', 'Baker', 'quinn.baker@example.com', 'password876', 1234567808, 'user'),
+('Rachel', 'Gonzalez', 'rachel.gonzalez@example.com', NULL, 1234567809, 'user_nr'),
+('Sam', 'Nelson', 'sam.nelson@example.com', 'password666', 1234567810, 'user'),
+('Tina', 'Carter', 'tina.carter@example.com', NULL, 1234567811, 'user_nr'),
+('Uma', 'Mitchell', 'uma.mitchell@example.com', 'password888', 1234567812, 'user'),
+('Vera', 'Perez', 'vera.perez@example.com', NULL, 1234567813, 'user_nr'),
+('Will', 'Roberts', 'will.roberts@example.com', 'password1011', 1234567814, 'user'),
+('Xena', 'Turner', 'xena.turner@example.com', NULL, 1234567815, 'user_nr'),
+('Yara', 'Phillips', 'yara.phillips@example.com', 'password1415', 1234567816, 'user'),
+('Zane', 'Campbell', 'zane.campbell@example.com', NULL, 1234567817, 'user_nr'),
+('Aaron', 'Parker', 'aaron.parker@example.com', 'password1819', 1234567818, 'user'),
+('Bella', 'Evans', 'bella.evans@example.com', NULL, 1234567819, 'user_nr'),
+('Cody', 'Edwards', 'cody.edwards@example.com', 'password2223', 1234567820, 'user'),
+('Daisy', 'Stewart', 'daisy.stewart@example.com', NULL, 1234567821, 'user_nr'),
+('Eli', 'Sanchez', 'eli.sanchez@example.com', 'password2627', 1234567822, 'user'),
+('Faith', 'Morris', 'faith.morris@example.com', NULL, 1234567823, 'user_nr'),
+('Gabe', 'Rogers', 'gabe.rogers@example.com', 'password3031', 1234567824, 'user'),
+('Holly', 'Reed', 'holly.reed@example.com', NULL, 1234567825, 'user_nr'),
+('Isaac', 'Cook', 'isaac.cook@example.com', 'password3435', 1234567826, 'user'),
+('Jade', 'Morgan', 'jade.morgan@example.com', NULL, 1234567827, 'user_nr'),
+('Kyle', 'Bell', 'kyle.bell@example.com', 'password3839', 1234567828, 'user'),
+('Leah', 'Cooper', 'leah.cooper@example.com', NULL, 1234567829, 'user_nr'),
+('Mason', 'Bailey', 'mason.bailey@example.com', 'password4243', 1234567830, 'user'),
+('Nina', 'Rivera', 'nina.rivera@example.com', NULL, 1234567831, 'user_nr'),
+('Oscar', 'Howard', 'oscar.howard@example.com', 'password4647', 1234567832, 'user'),
+('Penny', 'Harris', 'penny.harris@example.com', NULL, 1234567833, 'user_nr'),
+('Quincy', 'Garcia', 'quincy.garcia@example.com', 'password5051', 1234567834, 'user'),
+('Rita', 'Ward', 'rita.ward@example.com', NULL, 1234567835, 'user_nr'),
+('Steve', 'Russell', 'steve.russell@example.com', 'password5455', 1234567836, 'user'),
+('Troy', 'Diaz', 'troy.diaz@example.com', NULL, 1234567837, 'user_nr');
+
+
+
+
+
+INSERT INTO package (
+    package_id, tag_id, sender_id, receiver_id, type, package_condition, 
+    departure, destination, price, tracking_device_id, submitted, 
+    out_for_delivery, arrived, completed, cancelled, submitted_by
+) VALUES
+('AAAA0117', 'TAG0003', 1, 3, 'food', 'new', 'Kandy', 'Kandy', 18000, 1, NOW()  - INTERVAL 2 DAY , NOW() - INTERVAL 1 DAY , NOW() - INTERVAL 1 DAY, TRUE, FALSE, 10003)
+
+
+
+

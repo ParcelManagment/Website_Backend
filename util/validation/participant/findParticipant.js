@@ -15,6 +15,7 @@ const findParticipant = async (req, res, next) => {
 
         if (sender) {
             req.body.sender.sender_id = sender.id;
+            req.body.sender.email = sender.email;
             req.body.sender.registered = true;
         } else {
             req.body.sender.registered = false;
@@ -22,6 +23,7 @@ const findParticipant = async (req, res, next) => {
 
         if (receiver) {
             req.body.receiver.receiver_id = receiver.id;
+            req.body.receiver.email = receiver.email;
             req.body.receiver.registered = true;
         } else {
             req.body.receiver.registered = false;

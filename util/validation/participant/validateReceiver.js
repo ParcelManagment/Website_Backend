@@ -26,6 +26,7 @@ const validateReceiver = [
           },
            transaction: req.transaction });
         req.body.receiver.receiver_id = newReceiver[0].dataValues.id;
+        req.body.receiver.email = newReceiver[0].dataValues.email;
         next();
       } catch (error) {
         console.log('Error while creating new Receiver', error);

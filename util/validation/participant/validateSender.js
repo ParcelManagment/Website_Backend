@@ -25,6 +25,7 @@ const validateSender = [
         }, { transaction: req.transaction });
 
         req.body.sender.sender_id = newSender.id;
+        req.body.sender.email = newSender.email
         next();
       } catch (error) {
         console.log('Error while creating new Sender', error);
