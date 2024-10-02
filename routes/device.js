@@ -38,4 +38,36 @@ router.get("/device/:deviceId", async (req, res, next) => {
   }
 });
 
+
+router.get("/user/id/:email", async (req, res, next) => {
+  const { email } = req.params;
+
+  try {
+    // Query to find user_id based on email
+    const [result] = await sequelize.query(
+      `SELECT id FROM user WHERE email = ? LIMIT 1`,
+      {
+        replacements: [email],
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (!result) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { id } = result;
+
+    res.status(200).json({
+      userId: id,
+    });
+  } catch (error) {
+    console.error("Error fetching user ID by email", error);
+    res.status(500).json({ Error: "Something went wrong" });
+  }
+});
+
+
+
+
 module.exports = router;
