@@ -6,8 +6,8 @@ const sequelize = require("../database/connectSequelize");
 router.get("/device/:deviceId", async (req, res, next) => {
   const { deviceId } = req.params;
 
-  try {
-    // latest longitude, latitude, and last_update for given deviceId
+  try { 
+    // latest longi tude, latitude, and last_update for given deviceId
     const [results] = await sequelize.query(
       `SELECT Longitude, Latitude, Last_update 
        FROM trackingdevice 
