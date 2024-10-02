@@ -35,7 +35,7 @@ app.use(cookieParser())
 app.use('/admin', admin);  // admin routes for employee iot device management
 app.use('/summary',isAdmin, summary) // summery for admin dashbord (complex queries with data summary)
 app.use('/users', users); // user registration and login
-app.use('/api/staff', staff); // staff login and registration
+app.use('/staff', staff); // staff login and registration
 app.use('/package', packageRouter);  //  package creation and manupulation
 app.use("/message",message); //chat bot can use from this.
 app.use("/deviceIds", deviceIds); 
