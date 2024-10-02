@@ -261,52 +261,47 @@ router.put('/edituser/:id', async(req, res)=> {
 router.put("/completepackage/:id", async (req, res) => {
     const packageId = req.params.id;
 
-    try{
-        const transaction = await sequelize.transaction();
+    try {
+        console.log("Checking package status for ID:", packageId);
 
-        try{
-            //Find the package by ID
-            const packageResult = await Package.findOne({
-                where: {package_id: packageId},
-                attributes: ["completed"], //Fetech only the 'completed status
-                transaction
-            });
+        // Fetch the current status of the package
+        const packageResult = await Package.findOne({
+            where: { package_id: packageId },
+            attributes: ["completed"] // Fetch only the 'completed' status
+        });
 
-            if (!packageResult){
-                return res.status(404).json({message:"Pacakge not found"});
-            }
-
-            //Check if the package is already completed
-            if (packageResult.completed === true){
-                return res.status(400).json({message: "Package is already marked as completed"});
-            }
-
-            //Mark the package as completed
-            await Package.update(
-                {completed:true},
-                {where: { package_id: packageId }, transaction}
-            );
-
-            //Commit the transaction
-            await transaction.commit();
-
-            res.status(200).json({message: "Package marked as completed!"});
-
-
-        }
-        catch (error) {
-            //Rollback transaction if any error occurs
-            await transaction.rollback();
-            console.error("Error completing package",error);
-            res.status(500).json({message: "Error completing package",error});
-
+        if (!packageResult) {
+            return res.status(404).json({ message: "Package not found" });
         }
 
-    }
-    catch(error){
-        console.error('Unexpected database error:', error);
-        res.status(500).json({message:"Unexpected database error",error});
+        console.log("Package current status:", packageResult.completed);
+
+        // Check if the package is already completed
+        if (packageResult.completed === 1) {
+            return res.status(400).json({ message: "Package is already marked as completed" });
+        }
+
+        // Proceed with updating the package to completed
+        const [updatedRows] = await Package.update(
+            { completed: 1 },
+            { where: { package_id: packageId }, logging: console.log } // Log the SQL query
+        );
+
+        console.log("Rows updated:", updatedRows);
+
+        if (updatedRows === 0) {
+            return res.status(400).json({ message: "Failed to mark as completed" });
+        }
+
+        res.status(200).json({ message: "Package marked as completed!" });
+
+    } catch (error) {
+        console.error("Error during update operation:", error);
+        res.status(500).json({ message: "Error marking package as completed", error });
     }
 });
+
+
+
 
 module.exports = router;
