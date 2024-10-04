@@ -19,7 +19,9 @@ Package.init({
   submitted: { type: DataTypes.DATE  },
   out_for_delivery: { type: DataTypes.DATE },
   arrived: { type: DataTypes.DATE },
+  completed: { type: DataTypes.BOOLEAN, defaultValue: false },
   cancelled: { type: DataTypes.BOOLEAN, defaultValue: false },
+
   submitted_by: {type: DataTypes.INTEGER, allowNull: false}
 }, { sequelize, modelName: 'Package', tableName: "package", timestamps:false});
 
