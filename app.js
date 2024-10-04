@@ -20,7 +20,9 @@ const mqttHandler = require("./mqtt/device.js");
 const { isAdmin } = require('./util/auth/staffAuth.js');
 const port = 3000
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://ec2-13-53-200-229.eu-north-1.compute.amazonaws.com'
+}));
 
 //syncDb()
 
